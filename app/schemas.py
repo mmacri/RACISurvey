@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+RACI_REGEX = "^[RACI]$|^None$|^$"
+
 
 class OrganizationCreate(BaseModel):
     name: str
@@ -75,6 +77,7 @@ class Activity(ActivityBase):
 class RecommendedRACICreate(BaseModel):
     activity_id: int
     role_id: int
+    value: Optional[str] = Field(None, regex=RACI_REGEX)
     value: Optional[str] = Field(None, regex="^[RACI]$|^None$")
 
 
@@ -104,6 +107,7 @@ class WorkshopRACICreate(BaseModel):
     workshop_id: int
     activity_id: int
     role_id: int
+    value: Optional[str] = Field(None, regex=RACI_REGEX)
     value: Optional[str] = Field(None, regex="^[RACI]$|^None$")
     source: Optional[str] = "workshop"
 
@@ -149,6 +153,29 @@ class ActionItem(ActionItemCreate):
         orm_mode = True
 
 
+class ValidationStats(BaseModel):
+    roles: dict
+    role_activity_map: dict = {}
+    total_assignments: int
+
+
+class ValidationResult(BaseModel):
+    created_issues: List[Issue]
+    stats: ValidationStats
+
+
+class RACIExportRow(BaseModel):
+    activity_id: int
+    activity_name: str
+    role_values: dict
+
+
+class ImportPayload(BaseModel):
+    organization: OrganizationCreate
+    domains: List[DomainCreate]
+    roles: List[RoleCreate]
+    activities: List[ActivityCreate]
+    recommended: List[RecommendedRACICreate] = []
 class ValidationResult(BaseModel):
     created_issues: List[Issue]
     stats: dict
