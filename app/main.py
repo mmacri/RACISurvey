@@ -1,11 +1,13 @@
 import csv
 import io
+import json
 from typing import List
 
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, PlainTextResponse, JSONResponse
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from . import crud, schemas, services, models
@@ -34,6 +36,7 @@ from .schemas import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+SAMPLE_TEMPLATE = BASE_DIR / "examples" / "seattle_city_light_import.json"
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -124,6 +127,11 @@ def list_activities(domain_id: int = None, db=Depends(get_db)):
 @app.post("/recommended", response_model=List[RecommendedRACI])
 def upload_recommended(payload: List[RecommendedRACICreate], db=Depends(get_db)):
     return crud.set_recommended_raci(db, [p.dict() for p in payload])
+
+
+@app.get("/recommended", response_model=List[RecommendedRACI])
+def list_recommended(activity_id: int = None, db=Depends(get_db)):
+    return crud.list_recommended(db, activity_id=activity_id)
 
 
 @app.post("/workshop-raci", response_model=WorkshopRACI)
@@ -223,6 +231,20 @@ def import_template(payload: ImportPayload, db=Depends(get_db)):
                 )
             rec_payloads.append({"activity_id": activity.id, "role_id": role.id, "value": rec_data.get("value") or getattr(rec, "value", None)})
         crud.set_recommended_raci(db, rec_payloads)
+
+    return organization
+
+
+@app.get("/templates/example")
+def get_example_template():
+    if SAMPLE_TEMPLATE.exists():
+        try:
+            content = json.loads(SAMPLE_TEMPLATE.read_text(encoding="utf-8"))
+            return JSONResponse(content)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail="Sample template is invalid JSON")
+    raise HTTPException(status_code=404, detail="Sample template not found")
+
 
     organization = crud.create_organization(db, payload.organization.dict())
     for d in payload.domains:

@@ -128,3 +128,19 @@ def test_import_template_creates_entities():
     )
     validation = client.post(f"/workshops/{workshop['id']}/validate").json()
     assert any(issue["type"] == "deviation_from_recommended" for issue in validation["created_issues"])
+
+
+def test_example_template_endpoint_and_recommended_listing():
+    client = TestClient(app)
+    sample = client.get("/templates/example").json()
+    assert sample["organization"]["name"] == "Seattle City Light"
+
+    org = client.post("/import", json=sample).json()
+    assert org["name"] == "Seattle City Light"
+
+    recommended = client.get("/recommended").json()
+    activities = client.get("/activities").json()
+    activity_lookup = {a["name"]: a["id"] for a in activities}
+
+    assert recommended, "Expected recommended RACI returned"
+    assert any(r["activity_id"] == activity_lookup.get("Approve OT security changes") for r in recommended)

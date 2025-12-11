@@ -32,6 +32,7 @@ GitHub Pages serves static files only; the dashboard still needs to reach a runn
 
 If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
 
+If you want the Pages site to render even without a backend, leave the API base empty (or set it to `demo`). The dashboard will enter in-browser demo mode, seed the Seattle City Light sample workshop, and pass the health check without any network calls. If a stored API base causes a 404 on GitHub Pages, the health check now automatically falls back to demo mode so the page stays usable.
 GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). If your API is not at the same origin as the page, edit `apiBase` near the bottom of `docs/index.html` to point at your backend (e.g., `https://your-host/api`).
 
 If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
@@ -42,6 +43,11 @@ Run tests:
 ```bash
 pytest
 ```
+
+## Template import
+
+- Grab the sample Seattle City Light payload via `GET /templates/example` (or download `examples/seattle_city_light_import.json`).
+- From the dashboard (self-hosted or GitHub Pages), load the sample template, paste your own JSON, or upload a file, then click **Import template** to create the organization, domains, roles, activities, and recommended RACI in one step.
 
 ### Seattle City Light demo dataset
 
