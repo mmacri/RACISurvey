@@ -1,0 +1,76 @@
+{
+  "organization": {
+    "name": "Seattle City Light",
+    "industry": "Electric Utility",
+    "notes": "Demo seed tailored for CIO/OT leadership workshops"
+  },
+  "domains": [
+    { "name": "Governance & Policy", "description": "Strategy, policy, and oversight" },
+    { "name": "Asset Management", "description": "Visibility of OT assets and configurations" },
+    { "name": "Access & Remote Connectivity", "description": "Identity, access, and vendor connectivity" },
+    { "name": "Monitoring & Incident Response", "description": "Detection and response for OT" },
+    { "name": "Change & Patch Management", "description": "Secure change and patch practices" }
+  ],
+  "roles": [
+    { "name": "CIO", "category": "IT" },
+    { "name": "CISO", "category": "Security" },
+    { "name": "OT Engineering Manager", "category": "OT" },
+    { "name": "Plant Operations Manager", "category": "Operations" },
+    { "name": "Vendor Manager", "category": "Vendor" },
+    { "name": "Compliance Lead", "category": "Compliance" }
+  ],
+  "activities": [
+    {
+      "domain": "Governance & Policy",
+      "name": "Approve OT security changes",
+      "description": "Authorize major OT security control changes across plants and substations",
+      "criticality": "High",
+      "framework_refs": "IEC 62443-2-1"
+    },
+    {
+      "domain": "Asset Management",
+      "name": "Maintain OT asset inventory",
+      "description": "Keep an authoritative, network-aware inventory of OT devices",
+      "criticality": "High",
+      "framework_refs": "NIST CSF ID.AM"
+    },
+    {
+      "domain": "Access & Remote Connectivity",
+      "name": "Authorize vendor remote access",
+      "description": "Approve and monitor vendor access to OT environments",
+      "criticality": "High",
+      "framework_refs": "NERC CIP-005"
+    },
+    {
+      "domain": "Change & Patch Management",
+      "name": "Maintain OT patch schedule",
+      "description": "Maintain coordinated OT patch schedules by site and vendor",
+      "criticality": "Medium",
+      "framework_refs": "IEC 62443-3-3"
+    },
+    {
+      "domain": "Monitoring & Incident Response",
+      "name": "Lead OT incident response",
+      "description": "Coordinate OT-specific incident response with IT SOC and plant teams",
+      "criticality": "High",
+      "framework_refs": "NIST CSF RS"
+    }
+  ],
+  "recommended": [
+    { "activity_name": "Approve OT security changes", "role_name": "CIO", "value": "A" },
+    { "activity_name": "Approve OT security changes", "role_name": "CISO", "value": "R" },
+    { "activity_name": "Approve OT security changes", "role_name": "OT Engineering Manager", "value": "C" },
+    { "activity_name": "Maintain OT asset inventory", "role_name": "OT Engineering Manager", "value": "R" },
+    { "activity_name": "Maintain OT asset inventory", "role_name": "Plant Operations Manager", "value": "C" },
+    { "activity_name": "Maintain OT asset inventory", "role_name": "CISO", "value": "I" },
+    { "activity_name": "Authorize vendor remote access", "role_name": "Vendor Manager", "value": "R" },
+    { "activity_name": "Authorize vendor remote access", "role_name": "CISO", "value": "A" },
+    { "activity_name": "Authorize vendor remote access", "role_name": "Plant Operations Manager", "value": "C" },
+    { "activity_name": "Maintain OT patch schedule", "role_name": "OT Engineering Manager", "value": "R" },
+    { "activity_name": "Maintain OT patch schedule", "role_name": "Plant Operations Manager", "value": "A" },
+    { "activity_name": "Maintain OT patch schedule", "role_name": "Vendor Manager", "value": "C" },
+    { "activity_name": "Lead OT incident response", "role_name": "CISO", "value": "A" },
+    { "activity_name": "Lead OT incident response", "role_name": "OT Engineering Manager", "value": "R" },
+    { "activity_name": "Lead OT incident response", "role_name": "CIO", "value": "I" }
+  ]
+}
