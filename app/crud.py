@@ -86,6 +86,13 @@ def set_recommended_raci(db: Session, entries: Iterable[dict]) -> List[models.Re
     return created
 
 
+def list_recommended(db: Session, activity_id: Optional[int] = None) -> List[models.RecommendedRACI]:
+    query = db.query(models.RecommendedRACI)
+    if activity_id:
+        query = query.filter(models.RecommendedRACI.activity_id == activity_id)
+    return query.all()
+
+
 def upsert_workshop_raci(db: Session, data: dict) -> models.WorkshopRACI:
     existing = (
         db.query(models.WorkshopRACI)

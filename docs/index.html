@@ -190,6 +190,23 @@
         <p class="small">Using: <code><span id="api-target">(not set)</span></code>. On GitHub Pages, set this to your running FastAPI backend. Value persists in <code>localStorage</code> and can be set via <code>?api=&lt;url&gt;</code>.</p>
       </div>
       <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, ensure the base URL includes the prefix (e.g., <code>https://example.com/raci</code>).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Template import</h2>
+      <p class="small">Upload a JSON template (matching <code>/templates/example</code>) to seed organizations, domains, roles, activities, and recommended RACI in one step.</p>
+      <div class="grid-2">
+        <div>
+          <label class="small" for="template-file">Upload template file</label>
+          <input type="file" id="template-file" accept="application/json" />
+        </div>
+        <div class="inline-actions" style="align-items:flex-end;">
+          <button type="button" id="load-sample-template">Load sample template</button>
+          <button type="button" id="import-template">Import template</button>
+        </div>
+      </div>
+      <textarea id="template-json" placeholder="Paste or drop template JSON here" style="min-height:160px; margin-top:10px;"></textarea>
+      <p class="small muted">Template fields: organization, domains[], roles[], activities[] (with domain names), recommended[]. See Seattle City Light sample for structure.</p>
       <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, update <code>apiBase</code> in the script below to match your path.</p>
     </section>
 
@@ -313,6 +330,11 @@
     const validateWorkshopInput = document.getElementById("validate-workshop-id");
     const overloadInput = document.getElementById("overload-threshold");
 
+    const templateFileInput = document.getElementById("template-file");
+    const templateTextArea = document.getElementById("template-json");
+    const loadSampleTemplateBtn = document.getElementById("load-sample-template");
+    const importTemplateBtn = document.getElementById("import-template");
+
     const formOrg = document.getElementById("form-org");
     const formWorkshop = document.getElementById("form-workshop");
     const formDomain = document.getElementById("form-domain");
@@ -320,10 +342,237 @@
     const formActivity = document.getElementById("form-activity");
     const formRaci = document.getElementById("form-raci");
 
+    // --- Demo in-browser API so GitHub Pages can run without a live backend ---
+    const demoDb = {
+      seq: 1,
+      organizations: [],
+      workshops: [],
+      domains: [],
+      roles: [],
+      activities: [],
+      raci: [],
+      recommended: [],
+      issues: [],
+      actions: [],
+    };
+
+    const sampleTemplate = {
+      organization: { name: "Seattle City Light", industry: "Electric Utility", notes: "Demo seed tailored for CIO/OT leadership workshops" },
+      domains: [
+        { name: "Governance & Policy", description: "Strategy, policy, and oversight" },
+        { name: "Asset Management", description: "Visibility of OT assets and configurations" },
+        { name: "Access & Remote Connectivity", description: "Identity, access, and vendor connectivity" },
+        { name: "Monitoring & Incident Response", description: "Detection and response for OT" },
+        { name: "Change & Patch Management", description: "Secure change and patch practices" },
+      ],
+      roles: [
+        { name: "CIO", category: "IT" },
+        { name: "CISO", category: "Security" },
+        { name: "OT Engineering Manager", category: "OT" },
+        { name: "Plant Operations Manager", category: "Operations" },
+        { name: "Vendor Manager", category: "Vendor" },
+        { name: "Compliance Lead", category: "Compliance" },
+      ],
+      activities: [
+        { domain: "Governance & Policy", name: "Approve OT security changes", description: "Authorize major OT security control changes across plants and substations", criticality: "High", framework_refs: "IEC 62443-2-1" },
+        { domain: "Asset Management", name: "Maintain OT asset inventory", description: "Keep an authoritative, network-aware inventory of OT devices", criticality: "High", framework_refs: "NIST CSF ID.AM" },
+        { domain: "Access & Remote Connectivity", name: "Authorize vendor remote access", description: "Approve and monitor vendor access to OT environments", criticality: "High", framework_refs: "NERC CIP-005" },
+        { domain: "Change & Patch Management", name: "Maintain OT patch schedule", description: "Maintain coordinated OT patch schedules by site and vendor", criticality: "Medium", framework_refs: "IEC 62443-3-3" },
+        { domain: "Monitoring & Incident Response", name: "Lead OT incident response", description: "Coordinate OT-specific incident response with IT SOC and plant teams", criticality: "High", framework_refs: "NIST CSF RS" },
+      ],
+      recommended: [
+        { activity_name: "Approve OT security changes", role_name: "CIO", value: "A" },
+        { activity_name: "Approve OT security changes", role_name: "CISO", value: "R" },
+        { activity_name: "Approve OT security changes", role_name: "OT Engineering Manager", value: "C" },
+        { activity_name: "Maintain OT asset inventory", role_name: "OT Engineering Manager", value: "R" },
+        { activity_name: "Maintain OT asset inventory", role_name: "Plant Operations Manager", value: "C" },
+        { activity_name: "Maintain OT asset inventory", role_name: "CISO", value: "I" },
+        { activity_name: "Authorize vendor remote access", role_name: "Vendor Manager", value: "R" },
+        { activity_name: "Authorize vendor remote access", role_name: "CISO", value: "A" },
+        { activity_name: "Authorize vendor remote access", role_name: "Plant Operations Manager", value: "C" },
+        { activity_name: "Maintain OT patch schedule", role_name: "OT Engineering Manager", value: "R" },
+        { activity_name: "Maintain OT patch schedule", role_name: "Plant Operations Manager", value: "A" },
+        { activity_name: "Maintain OT patch schedule", role_name: "Vendor Manager", value: "C" },
+        { activity_name: "Lead OT incident response", role_name: "CISO", value: "A" },
+        { activity_name: "Lead OT incident response", role_name: "OT Engineering Manager", value: "R" },
+        { activity_name: "Lead OT incident response", role_name: "CIO", value: "I" },
+      ],
+    };
+
+    function seedDemo() {
+      if (demoDb.organizations.length) return;
+      const orgId = demoDb.seq++;
+      demoDb.organizations.push({ id: orgId, name: "Seattle City Light", industry: "Utilities", notes: "Demo data" });
+      const domains = ["Governance", "Asset Management", "Access Management"];
+      domains.forEach((name) => demoDb.domains.push({ id: demoDb.seq++, organization_id: orgId, name }));
+      const roles = [
+        { name: "CIO", category: "IT" },
+        { name: "OT Engineering Manager", category: "OT" },
+        { name: "Plant Ops", category: "OT" },
+        { name: "Cyber Risk", category: "Compliance" },
+      ];
+      roles.forEach((r) => demoDb.roles.push({ id: demoDb.seq++, organization_id: orgId, ...r }));
+      const activities = [
+        { name: "Approve OT security changes", domain: "Governance", criticality: "High" },
+        { name: "Maintain OT asset inventory", domain: "Asset Management", criticality: "High" },
+        { name: "Authorize vendor remote access", domain: "Access Management", criticality: "High" },
+      ];
+      activities.forEach((a) => {
+        const domain = demoDb.domains.find((d) => d.name === a.domain);
+        demoDb.activities.push({ id: demoDb.seq++, domain_id: domain.id, ...a });
+      });
+      const workshopId = demoDb.seq++;
+      demoDb.workshops.push({ id: workshopId, organization_id: orgId, name: "Seattle City Light – CIO review" });
+      // Seed a few RACI rows
+      const activityIds = demoDb.activities.map((a) => a.id);
+      const roleByName = (n) => demoDb.roles.find((r) => r.name === n)?.id;
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[0], role_id: roleByName("CIO"), value: "A" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[0], role_id: roleByName("OT Engineering Manager"), value: "R" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[1], role_id: roleByName("OT Engineering Manager"), value: "A" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[1], role_id: roleByName("Plant Ops"), value: "R" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[2], role_id: roleByName("CIO"), value: "A" });
+      demoDb.recommended.push(
+        { id: demoDb.seq++, activity_id: activityIds[0], role_id: roleByName("CIO"), value: "A" },
+        { id: demoDb.seq++, activity_id: activityIds[0], role_id: roleByName("OT Engineering Manager"), value: "R" },
+        { id: demoDb.seq++, activity_id: activityIds[1], role_id: roleByName("OT Engineering Manager"), value: "R" },
+        { id: demoDb.seq++, activity_id: activityIds[1], role_id: roleByName("Plant Ops"), value: "C" },
+        { id: demoDb.seq++, activity_id: activityIds[2], role_id: roleByName("CIO"), value: "A" },
+      );
+    }
+
+    function handleDemoRequest(path, options) {
+      seedDemo();
+      const method = (options.method || "GET").toUpperCase();
+      const body = options.body ? JSON.parse(options.body) : {};
+      const notFound = () => { const err = new Error("404 Not Found"); err.status = 404; throw err; };
+
+      if (path === "/api/health") return { message: "Demo API ready" };
+      if (method === "GET" && path === "/templates/example") return sampleTemplate;
+
+      // Collections
+      const collections = {
+        "/organizations": "organizations",
+        "/workshops": "workshops",
+        "/domains": "domains",
+        "/roles": "roles",
+        "/activities": "activities",
+        "/workshop-raci": "raci",
+        "/recommended": "recommended",
+        "/issues": "issues",
+        "/actions": "actions",
+      };
+
+      if (collections[path] && method === "GET") return demoDb[collections[path]];
+      if (collections[path] && method === "POST") {
+        const item = { id: demoDb.seq++, ...body };
+        demoDb[collections[path]].push(item);
+        return item;
+      }
+
+      if (method === "POST" && path === "/import") {
+        const payload = body;
+        const orgId = demoDb.seq++;
+        const organization = { id: orgId, ...(payload.organization || {}) };
+        demoDb.organizations.push(organization);
+
+        const domainMap = {};
+        (payload.domains || []).forEach((d) => {
+          const record = { id: demoDb.seq++, organization_id: orgId, ...d };
+          demoDb.domains.push(record);
+          domainMap[record.name] = record;
+        });
+
+        const roleMap = {};
+        (payload.roles || []).forEach((r) => {
+          const record = { id: demoDb.seq++, organization_id: orgId, ...r };
+          demoDb.roles.push(record);
+          roleMap[record.name] = record;
+        });
+
+        const activityMap = {};
+        (payload.activities || []).forEach((a) => {
+          const domain = domainMap[a.domain];
+          if (!domain) {
+            const err = new Error(`Domain '${a.domain}' missing for activity '${a.name}'`);
+            err.status = 400;
+            throw err;
+          }
+          const record = { id: demoDb.seq++, domain_id: domain.id, ...a };
+          demoDb.activities.push(record);
+          activityMap[record.name] = record;
+        });
+
+        (payload.recommended || []).forEach((rec) => {
+          const activity = activityMap[rec.activity_name];
+          const role = roleMap[rec.role_name];
+          if (!activity || !role) {
+            const err = new Error(`Invalid recommendation reference ${rec.activity_name}/${rec.role_name}`);
+            err.status = 400;
+            throw err;
+          }
+          demoDb.recommended.push({ id: demoDb.seq++, activity_id: activity.id, role_id: role.id, value: rec.value });
+        });
+
+        return organization;
+      }
+
+      const workshopDetail = (suffix) => {
+        const match = path.match(new RegExp(`\\/workshops\\/(\\d+)\\/${suffix}$`));
+        return match ? parseInt(match[1], 10) : null;
+      };
+
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/raci")) {
+        const id = workshopDetail("raci");
+        return demoDb.raci.filter((r) => r.workshop_id === id);
+      }
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/issues")) {
+        const id = workshopDetail("issues");
+        return demoDb.issues.filter((r) => r.workshop_id === id);
+      }
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/actions")) {
+        const id = workshopDetail("actions");
+        return demoDb.actions.filter((r) => r.workshop_id === id);
+      }
+
+      if (method === "POST" && path.startsWith("/workshops/") && path.endsWith("/validate")) {
+        const id = workshopDetail("validate");
+        const activities = demoDb.activities.filter((a) => a.organization_id == null || a.organization_id === (demoDb.workshops.find((w) => w.id === id)?.organization_id));
+        demoDb.issues = demoDb.issues.filter((i) => i.workshop_id !== id);
+        const issues = [];
+        activities.forEach((activity) => {
+          const rows = demoDb.raci.filter((r) => r.workshop_id === id && r.activity_id === activity.id);
+          const aCount = rows.filter((r) => r.value === "A").length;
+          const rCount = rows.filter((r) => r.value === "R").length;
+          if (aCount === 0) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "missing_A", severity: "High", notes: "No accountable role selected" });
+          if (aCount > 1) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "multiple_A", severity: "High", notes: "More than one accountable role selected" });
+          if (rCount === 0) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "no_R", severity: "Medium", notes: "No responsible role selected" });
+        });
+        demoDb.issues.push(...issues);
+        const roleLoad = {};
+        demoDb.raci.filter((r) => r.workshop_id === id).forEach((row) => {
+          roleLoad[row.role_id] = roleLoad[row.role_id] || {};
+          roleLoad[row.role_id][row.value || "None"] = (roleLoad[row.role_id][row.value || "None"] || 0) + 1;
+        });
+        return { created_issues: issues, stats: { roles: roleLoad, total_assignments: demoDb.raci.filter((r) => r.workshop_id === id).length } };
+      }
+
+      if (method === "POST" && path.startsWith("/workshops/") && path.endsWith("/actions/from-issues")) {
+        const id = workshopDetail("actions/from-issues");
+        const newActions = demoDb.issues
+          .filter((i) => i.workshop_id === id)
+          .map((i) => ({ id: demoDb.seq++, workshop_id: id, issue_id: i.id, summary: `Resolve ${i.type} for activity ${i.activity_id}`, status: "planned" }));
+        demoDb.actions.push(...newActions);
+        return newActions;
+      }
+
+      return notFound();
+    }
+
     function resolveApiBase() {
       const params = new URLSearchParams(window.location.search);
       const fromQuery = params.get("api");
       const fromStorage = localStorage.getItem("apiBase");
+      const derived = fromQuery || fromStorage || "demo";
       const derived = fromQuery || fromStorage || "";
       apiInput.value = derived;
       apiTarget.textContent = derived || "(relative to page)";
@@ -348,6 +597,9 @@
     });
 
     async function fetchJSON(path, options = {}) {
+      if (apiBase === "demo") {
+        return handleDemoRequest(path, options);
+      }
       const base = apiBase.replace(/\/$/, "");
       const url = base ? `${base}${path}` : path;
       const res = await fetch(url, {
@@ -382,6 +634,42 @@
         }
       });
     }
+
+    function setTemplateContent(content) {
+      if (!templateTextArea) return;
+      templateTextArea.value = typeof content === "string" ? content : JSON.stringify(content, null, 2);
+    }
+
+    templateFileInput?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      setTemplateContent(text);
+      setStatus(`Loaded template file ${file.name}`);
+    });
+
+    loadSampleTemplateBtn?.addEventListener("click", async () => {
+      try {
+        const sample = await fetchJSON("/templates/example");
+        setTemplateContent(sample);
+        setStatus("Sample template loaded");
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    });
+
+    importTemplateBtn?.addEventListener("click", async () => {
+      try {
+        const raw = templateTextArea.value?.trim();
+        if (!raw) throw new Error("Paste or load a template first");
+        const payload = typeof raw === "string" ? JSON.parse(raw) : raw;
+        const org = await fetchJSON("/import", { method: "POST", body: JSON.stringify(payload) });
+        setStatus(`Template imported for ${org.name}`);
+        refreshTables();
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    });
 
     function setCurrentWorkshop(id) {
       if (!id) return;
@@ -449,6 +737,39 @@
       return `<h4>${title}</h4><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
     }
 
+    function computeRoleLoad(raci) {
+      const load = {};
+      raci.forEach((row) => {
+        const bucket = load[row.role_id] || { R: 0, A: 0, C: 0, I: 0, None: 0 };
+        bucket[row.value || "None"] = (bucket[row.value || "None"] || 0) + 1;
+        load[row.role_id] = bucket;
+      });
+      return load;
+    }
+
+    function renderRoleLoad(load, roles) {
+      if (!Object.keys(load).length) return "<div class=\"small muted\">No assignments yet.</div>";
+      const rows = Object.entries(load)
+        .map(([roleId, counts]) => {
+          const role = roles.find((r) => String(r.id) === String(roleId));
+          return `<tr><td>${role?.name || roleId}</td><td>${counts.A || 0}</td><td>${counts.R || 0}</td><td>${counts.C || 0}</td><td>${counts.I || 0}</td></tr>`;
+        })
+        .join("");
+      return `<table><thead><tr><th>Role</th><th>A</th><th>R</th><th>C</th><th>I</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    function renderGapSummary(issues) {
+      if (!issues.length) return "<div class=\"small muted\">No gaps detected. Run validation after assigning RACI.</div>";
+      const counts = issues.reduce((acc, i) => ({ ...acc, [i.type]: (acc[i.type] || 0) + 1 }), {});
+      const items = Object.entries(counts)
+        .map(([type, count]) => `<li>${type}: <strong>${count}</strong></li>`)
+        .join("");
+      return `<ul class=\"small\">${items}</ul>`;
+    }
+
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities] = await Promise.all([
@@ -457,6 +778,7 @@
           fetchJSON("/domains"),
           fetchJSON("/roles"),
           fetchJSON("/activities"),
+          fetchJSON("/recommended"),
         ]);
 
         const currentId = validateWorkshopInput.value || currentWorkshopEl.textContent;
@@ -471,12 +793,30 @@
           }
         }
 
+        const roleLoad = computeRoleLoad(raci);
+
+        tablesEl.innerHTML = [
+          `<div class="panel" style="background:rgba(255,255,255,0.02);">
+            <h3 style="margin-top:0;">Workshop snapshot</h3>
+            <p class="small">Org: <strong>${orgs.length}</strong> • Workshops: <strong>${workshops.length}</strong> • Domains: <strong>${domains.length}</strong> • Activities: <strong>${activities.length}</strong> • RACI rows: <strong>${raci.length}</strong> • Recommended: <strong>${recommended.length}</strong></p>
+            <div class="grid-2">
+              <div>
+                <h4>Role load</h4>
+                ${renderRoleLoad(roleLoad, roles)}
+              </div>
+              <div>
+                <h4>Gap summary</h4>
+                ${renderGapSummary(issues)}
+              </div>
+            </div>
+          </div>`,
         tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
           renderTable("Domains", domains),
           renderTable("Roles", roles),
           renderTable("Activities", activities),
+          renderTable("Recommended RACI", recommended),
           renderTable("Workshop RACI", raci),
           renderTable("Issues", issues),
           renderTable("Actions", actions),
