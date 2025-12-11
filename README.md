@@ -20,7 +20,6 @@ uvicorn app.main:app --reload
 
 To serve the dashboard only (for GitHub Pages or a static preview), publish `web/index.html` and point it at your deployed API by setting `apiBase` in the inline script.
 
-
 ### GitHub Pages
 
 The repo includes `docs/index.html` (a copy of the dashboard) so you can enable GitHub Pages without extra build steps:
@@ -28,6 +27,10 @@ The repo includes `docs/index.html` (a copy of the dashboard) so you can enable 
 1. In GitHub, open **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to **GitHub Actions** (recommended). This repo includes `.github/workflows/pages.yml` which publishes the `docs/` folder to Pages on every push to `main`.
    - If you prefer branch-based publishing, select **Deploy from a branch** and choose the `main` branch with the **/docs** folder. After saving, Pages will serve `docs/index.html` instead of the repository README.
+
+GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). Use the “API base URL” field on the page (or append `?api=https://your-host/api`) to point the dashboard at your backend; the value is persisted to `localStorage` so you do not have to re-enter it.
+
+If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
 
 GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). If your API is not at the same origin as the page, edit `apiBase` near the bottom of `docs/index.html` to point at your backend (e.g., `https://your-host/api`).
 
@@ -80,6 +83,8 @@ pytest
 - `POST /workshop-raci` – upsert workshop RACI decisions
 - `POST /workshops/{id}/validate` – check for missing/multiple A, missing R, deviations vs recommended, and role overload
 - `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
+- `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
 - `GET /workshops/{id}/export/raci`, `/workshops/{id}/export/gaps`, and `/workshops/{id}/export/actions` – CSV exports of the live workshop state
 - `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
 - `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state

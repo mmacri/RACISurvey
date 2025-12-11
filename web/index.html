@@ -141,6 +141,9 @@
     }
     .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .muted { color: var(--muted); }
+    .api-config { margin-top: 12px; }
+    .api-row { display: flex; gap: 8px; }
+    .api-row input { flex: 1; }
   </style>
 </head>
 <body>
@@ -178,7 +181,15 @@
     <section class="panel">
       <h2>API status</h2>
       <div id="health" class="status">Waiting for ping...</div>
-      <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, update <code>apiBase</code> in the script below to match your path.</p>
+      <div class="api-config">
+        <label for="api-base" class="small">API base URL</label>
+        <div class="api-row">
+          <input id="api-base" placeholder="https://your-api.example.com" />
+          <button type="button" id="save-api">Save</button>
+        </div>
+        <p class="small">Using: <code><span id="api-target">(not set)</span></code>. On GitHub Pages, set this to your running FastAPI backend. Value persists in <code>localStorage</code> and can be set via <code>?api=&lt;url&gt;</code>.</p>
+      </div>
+      <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, ensure the base URL includes the prefix (e.g., <code>https://example.com/raci</code>).</p>
     </section>
 
     <section class="panel">
@@ -291,8 +302,10 @@
   </main>
 
   <script>
-    const apiBase = ""; // Override if hosted behind a prefix
     const healthEl = document.getElementById("health");
+    const apiInput = document.getElementById("api-base");
+    const apiTarget = document.getElementById("api-target");
+    const saveApiBtn = document.getElementById("save-api");
     const currentWorkshopEl = document.getElementById("current-workshop");
     const tablesEl = document.getElementById("tables");
     const validationEl = document.getElementById("validation-results");
@@ -306,6 +319,18 @@
     const formActivity = document.getElementById("form-activity");
     const formRaci = document.getElementById("form-raci");
 
+    function resolveApiBase() {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("api");
+      const fromStorage = localStorage.getItem("apiBase");
+      const derived = fromQuery || fromStorage || "";
+      apiInput.value = derived;
+      apiTarget.textContent = derived || "(relative to page)";
+      return derived;
+    }
+
+    let apiBase = resolveApiBase();
+
     const setStatus = (text, ok = true) => {
       healthEl.textContent = text;
       healthEl.style.background = ok ? "rgba(56, 189, 248, 0.08)" : "rgba(248,113,113,0.1)";
@@ -313,8 +338,18 @@
       healthEl.style.color = ok ? "#7dd3fc" : "#fecdd3";
     };
 
+    saveApiBtn.addEventListener("click", () => {
+      apiBase = apiInput.value.trim();
+      localStorage.setItem("apiBase", apiBase);
+      apiTarget.textContent = apiBase || "(relative to page)";
+      ping();
+      refreshTables();
+    });
+
     async function fetchJSON(path, options = {}) {
-      const res = await fetch(apiBase + path, {
+      const base = apiBase.replace(/\/$/, "");
+      const url = base ? `${base}${path}` : path;
+      const res = await fetch(url, {
         headers: { "Content-Type": "application/json" },
         ...options,
       });

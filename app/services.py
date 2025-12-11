@@ -137,16 +137,6 @@ def _build_role_load_stats(db: Session, workshop_id: int) -> Dict:
     summary = {
         "roles": {str(role_id): dict(counter) for role_id, counter in stats.items()},
         "role_activity_map": role_activity_map,
-    return payloads
-
-
-def _build_role_load_stats(workshop_id: int) -> Dict:
-    stats: Dict[int, Counter] = defaultdict(Counter)
-    assignments = crud.list_workshop_raci(workshop_id)
-    for assignment in assignments:
-        stats[assignment.role_id][assignment.value or "None"] += 1
-    summary = {
-        "roles": {str(role_id): dict(counter) for role_id, counter in stats.items()},
         "total_assignments": len(assignments),
     }
     return summary
@@ -163,12 +153,6 @@ def generate_actions_from_issues(db: Session, workshop_id: int) -> List[models.A
         summary = f"Resolve {issue.type} for activity {issue.activity_id}"
         action = crud.add_action_item(
             db,
-def generate_actions_from_issues(workshop_id: int) -> List[models.ActionItem]:
-    actions: List[models.ActionItem] = []
-    issues = crud.list_issues(workshop_id)
-    for issue in issues:
-        summary = f"Resolve {issue.type} for activity {issue.activity_id}"
-        action = crud.add_action_item(
             {
                 "workshop_id": workshop_id,
                 "issue_id": issue.id,
