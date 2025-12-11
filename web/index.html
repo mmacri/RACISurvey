@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OT RACI Workshop Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --accent: #38bdf8;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.15), transparent 30%),
+        radial-gradient(circle at 80% 0%, rgba(34, 197, 94, 0.1), transparent 25%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(6px);
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      z-index: 10;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    main {
+      padding: 24px 32px 48px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .panel {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    .panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    button, input, select, textarea {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      width: 100%;
+    }
+    button {
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+      color: #0b172a;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(56, 189, 248, 0.35);
+    }
+    form {
+      display: grid;
+      gap: 10px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      color: var(--muted);
+    }
+    .status {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      color: #7dd3fc;
+      font-weight: 600;
+      margin: 8px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(56, 189, 248, 0.15);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .hero {
+      grid-column: 1/-1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+    .hero p { color: var(--muted); line-height: 1.6; }
+    code {
+      background: rgba(148, 163, 184, 0.12);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .muted { color: var(--muted); }
+    .api-config { margin-top: 12px; }
+    .api-row { display: flex; gap: 8px; }
+    .api-row input { flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="badge">Self-hosted</div>
+      <h1>OT RACI Workshop Dashboard</h1>
+      <p class="small">Use this landing page to seed data, run validations, and export results without external services.</p>
+    </div>
+    <div class="inline-actions">
+      <button type="button" id="ping-api">Ping API</button>
+      <button type="button" id="refresh-data">Refresh data</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel hero">
+      <div>
+        <h2>Workshop control center</h2>
+        <p>Load your template (organizations, domains, roles, activities) and drive workshops end-to-end from this page. All calls stay local to your deployment, keeping workshops private and GitHub-friendly.</p>
+        <p class="small">For scripted workflows, hit <code>/api/health</code> to verify readiness, then use the POST endpoints for organizations, workshops, and RACI entries. Exports are available under <code>/workshops/&lt;id&gt;/export/*</code>.</p>
+      </div>
+      <div class="panel" style="margin:0;">
+        <h3 style="margin-top:0;">Quick steps</h3>
+        <ol class="small" style="margin:0; padding-left:18px; line-height:1.6;">
+          <li>Create an organization.</li>
+          <li>Add domains, roles, and activities.</li>
+          <li>Create a workshop for the organization.</li>
+          <li>Assign R/A/C/I values per activity and role.</li>
+          <li>Run validation and generate actions/exports.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>API status</h2>
+      <div id="health" class="status">Waiting for ping...</div>
+      <div class="api-config">
+        <label for="api-base" class="small">API base URL</label>
+        <div class="api-row">
+          <input id="api-base" placeholder="https://your-api.example.com" />
+          <button type="button" id="save-api">Save</button>
+        </div>
+        <p class="small">Using: <code><span id="api-target">(not set)</span></code>. On GitHub Pages, set this to your running FastAPI backend. Value persists in <code>localStorage</code> and can be set via <code>?api=&lt;url&gt;</code>.</p>
+      </div>
+      <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, ensure the base URL includes the prefix (e.g., <code>https://example.com/raci</code>).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Create organization</h2>
+      <form id="form-org">
+        <input name="name" placeholder="Name (e.g., Contoso Energy)" required />
+        <input name="industry" placeholder="Industry (optional)" />
+        <textarea name="notes" placeholder="Notes"></textarea>
+        <button type="submit">Create organization</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Create workshop</h2>
+      <form id="form-workshop">
+        <div class="grid-2">
+          <input name="organization_id" placeholder="Organization ID" required />
+          <input name="name" placeholder="Workshop name" required />
+        </div>
+        <div class="grid-2">
+          <input name="date" type="date" />
+          <input name="description" placeholder="Description" />
+        </div>
+        <button type="submit">Create workshop</button>
+      </form>
+      <p class="small muted">Current workshop ID: <span id="current-workshop">not set</span></p>
+    </section>
+
+    <section class="panel">
+      <h2>Domains & Roles</h2>
+      <form id="form-domain">
+        <div class="grid-2">
+          <input name="name" placeholder="Domain name (e.g., Governance)" required />
+          <input name="organization_id" placeholder="Organization ID" />
+        </div>
+        <textarea name="description" placeholder="Description"></textarea>
+        <button type="submit">Add domain</button>
+      </form>
+      <hr style="border: 1px solid rgba(148,163,184,0.1);" />
+      <form id="form-role">
+        <div class="grid-2">
+          <input name="name" placeholder="Role name (e.g., CISO)" required />
+          <input name="organization_id" placeholder="Organization ID" required />
+        </div>
+        <div class="grid-2">
+          <input name="category" placeholder="Category (IT/OT/Vendor/etc.)" />
+          <input name="description" placeholder="Description" />
+        </div>
+        <button type="submit">Add role</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Activities</h2>
+      <form id="form-activity">
+        <div class="grid-2">
+          <input name="name" placeholder="Activity name" required />
+          <input name="domain_id" placeholder="Domain ID" required />
+        </div>
+        <div class="grid-2">
+          <input name="code" placeholder="Reference ID (optional)" />
+          <input name="criticality" placeholder="Criticality (High/Med/Low)" />
+        </div>
+        <textarea name="description" placeholder="Description"></textarea>
+        <textarea name="framework_refs" placeholder="Framework references"></textarea>
+        <button type="submit">Add activity</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>RACI assignments</h2>
+      <form id="form-raci">
+        <div class="grid-2">
+          <input name="workshop_id" placeholder="Workshop ID" required />
+          <input name="activity_id" placeholder="Activity ID" required />
+        </div>
+        <div class="grid-2">
+          <input name="role_id" placeholder="Role ID" required />
+          <select name="value" required>
+            <option value="">-- Value --</option>
+            <option value="R">Responsible (R)</option>
+            <option value="A">Accountable (A)</option>
+            <option value="C">Consulted (C)</option>
+            <option value="I">Informed (I)</option>
+          </select>
+        </div>
+        <button type="submit">Upsert assignment</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Validate & Actions</h2>
+      <div class="grid-2">
+        <input id="validate-workshop-id" placeholder="Workshop ID" />
+        <input id="overload-threshold" placeholder="Overload threshold" value="10" />
+      </div>
+      <div class="inline-actions" style="margin-top:10px;">
+        <button type="button" id="run-validation">Run validation</button>
+        <button type="button" id="generate-actions">Generate actions from issues</button>
+      </div>
+      <p class="small">Exports (CSV): <code>/workshops/&lt;id&gt;/export/raci</code>, <code>/workshops/&lt;id&gt;/export/gaps</code>, <code>/workshops/&lt;id&gt;/export/actions</code></p>
+      <div id="validation-results" class="small muted"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Data overview</h2>
+      <div class="small muted">These tables read directly from the API. Set a current workshop to view issues/actions.</div>
+      <div id="tables"></div>
+    </section>
+  </main>
+
+  <script>
+    const healthEl = document.getElementById("health");
+    const apiInput = document.getElementById("api-base");
+    const apiTarget = document.getElementById("api-target");
+    const saveApiBtn = document.getElementById("save-api");
+    const currentWorkshopEl = document.getElementById("current-workshop");
+    const tablesEl = document.getElementById("tables");
+    const validationEl = document.getElementById("validation-results");
+    const validateWorkshopInput = document.getElementById("validate-workshop-id");
+    const overloadInput = document.getElementById("overload-threshold");
+
+    const formOrg = document.getElementById("form-org");
+    const formWorkshop = document.getElementById("form-workshop");
+    const formDomain = document.getElementById("form-domain");
+    const formRole = document.getElementById("form-role");
+    const formActivity = document.getElementById("form-activity");
+    const formRaci = document.getElementById("form-raci");
+
+    function resolveApiBase() {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("api");
+      const fromStorage = localStorage.getItem("apiBase");
+      const derived = fromQuery || fromStorage || "";
+      apiInput.value = derived;
+      apiTarget.textContent = derived || "(relative to page)";
+      return derived;
+    }
+
+    let apiBase = resolveApiBase();
+
+    const setStatus = (text, ok = true) => {
+      healthEl.textContent = text;
+      healthEl.style.background = ok ? "rgba(56, 189, 248, 0.08)" : "rgba(248,113,113,0.1)";
+      healthEl.style.borderColor = ok ? "rgba(56, 189, 248, 0.4)" : "rgba(248,113,113,0.3)";
+      healthEl.style.color = ok ? "#7dd3fc" : "#fecdd3";
+    };
+
+    saveApiBtn.addEventListener("click", () => {
+      apiBase = apiInput.value.trim();
+      localStorage.setItem("apiBase", apiBase);
+      apiTarget.textContent = apiBase || "(relative to page)";
+      ping();
+      refreshTables();
+    });
+
+    async function fetchJSON(path, options = {}) {
+      const base = apiBase.replace(/\/$/, "");
+      const url = base ? `${base}${path}` : path;
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return text; }
+    }
+
+    async function ping() {
+      try {
+        const data = await fetchJSON("/api/health");
+        setStatus(data.message || "API ready");
+      } catch (err) {
+        setStatus(`Health check failed: ${err.message}`, false);
+      }
+    }
+
+    function handleForm(form, handler) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        try {
+          const result = await handler(data);
+          setStatus(`Saved: ${JSON.stringify(result)}`);
+          form.reset();
+          refreshTables();
+        } catch (err) {
+          setStatus(err.message, false);
+        }
+      });
+    }
+
+    function setCurrentWorkshop(id) {
+      if (!id) return;
+      currentWorkshopEl.textContent = id;
+      validateWorkshopInput.value = id;
+    }
+
+    handleForm(formOrg, (data) => fetchJSON("/organizations", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formWorkshop, (data) => {
+      return fetchJSON("/workshops", { method: "POST", body: JSON.stringify(data) }).then((res) => {
+        setCurrentWorkshop(res.id);
+        return res;
+      });
+    });
+    handleForm(formDomain, (data) => fetchJSON("/domains", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formRole, (data) => fetchJSON("/roles", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formActivity, (data) => fetchJSON("/activities", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formRaci, (data) => fetchJSON("/workshop-raci", { method: "POST", body: JSON.stringify(data) }));
+
+    async function runValidation() {
+      const id = validateWorkshopInput.value || currentWorkshopEl.textContent;
+      if (!id || id === "not set") {
+        setStatus("Set a workshop ID first", false);
+        return;
+      }
+      try {
+        const payload = { overload_threshold: overloadInput.value || 10 };
+        const url = `/workshops/${id}/validate?` + new URLSearchParams(payload).toString();
+        const result = await fetchJSON(url, { method: "POST" });
+        validationEl.textContent = JSON.stringify(result, null, 2);
+        setStatus(`Validation ran for workshop ${id}`);
+        refreshTables();
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    async function generateActions() {
+      const id = validateWorkshopInput.value || currentWorkshopEl.textContent;
+      if (!id || id === "not set") {
+        setStatus("Set a workshop ID first", false);
+        return;
+      }
+      try {
+        await fetchJSON(`/workshops/${id}/actions/from-issues`, { method: "POST" });
+        setStatus(`Actions generated for workshop ${id}`);
+        refreshTables();
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    document.getElementById("run-validation").addEventListener("click", runValidation);
+    document.getElementById("generate-actions").addEventListener("click", generateActions);
+    document.getElementById("ping-api").addEventListener("click", ping);
+    document.getElementById("refresh-data").addEventListener("click", refreshTables);
+
+    function renderTable(title, data) {
+      if (!Array.isArray(data) || data.length === 0) return `<div class="small muted">No ${title.toLowerCase()} found.</div>`;
+      const cols = Object.keys(data[0]);
+      const head = cols.map((c) => `<th>${c}</th>`).join("");
+      const rows = data
+        .map((row) => `<tr>${cols.map((c) => `<td>${row[c] ?? ""}</td>`).join("")}</tr>`)
+        .join("");
+      return `<h4>${title}</h4><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities] = await Promise.all([
+          fetchJSON("/organizations"),
+          fetchJSON("/workshops"),
+          fetchJSON("/domains"),
+          fetchJSON("/roles"),
+          fetchJSON("/activities"),
+        ]);
+
+        const currentId = validateWorkshopInput.value || currentWorkshopEl.textContent;
+        let issues = [], actions = [], raci = [];
+        if (currentId && currentId !== "not set") {
+          try {
+            issues = await fetchJSON(`/workshops/${currentId}/issues`);
+            actions = await fetchJSON(`/workshops/${currentId}/actions`);
+            raci = await fetchJSON(`/workshops/${currentId}/raci`);
+          } catch (err) {
+            console.warn("Unable to load issues/actions for workshop", currentId, err);
+          }
+        }
+
+        tablesEl.innerHTML = [
+          renderTable("Organizations", orgs),
+          renderTable("Workshops", workshops),
+          renderTable("Domains", domains),
+          renderTable("Roles", roles),
+          renderTable("Activities", activities),
+          renderTable("Workshop RACI", raci),
+          renderTable("Issues", issues),
+          renderTable("Actions", actions),
+        ].join("");
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    // Initial load
+    ping();
+    refreshTables();
+  </script>
+</body>
+</html>
