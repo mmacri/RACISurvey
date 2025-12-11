@@ -190,7 +190,6 @@
         <p class="small">Using: <code><span id="api-target">(not set)</span></code>. On GitHub Pages, set this to your running FastAPI backend. Value persists in <code>localStorage</code> and can be set via <code>?api=&lt;url&gt;</code>.</p>
       </div>
       <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, ensure the base URL includes the prefix (e.g., <code>https://example.com/raci</code>).</p>
-      <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, update <code>apiBase</code> in the script below to match your path.</p>
     </section>
 
     <section class="panel">
@@ -320,11 +319,137 @@
     const formActivity = document.getElementById("form-activity");
     const formRaci = document.getElementById("form-raci");
 
+    // --- Demo in-browser API so GitHub Pages can run without a live backend ---
+    const demoDb = {
+      seq: 1,
+      organizations: [],
+      workshops: [],
+      domains: [],
+      roles: [],
+      activities: [],
+      raci: [],
+      issues: [],
+      actions: [],
+    };
+
+    function seedDemo() {
+      if (demoDb.organizations.length) return;
+      const orgId = demoDb.seq++;
+      demoDb.organizations.push({ id: orgId, name: "Seattle City Light", industry: "Utilities", notes: "Demo data" });
+      const domains = ["Governance", "Asset Management", "Access Management"];
+      domains.forEach((name) => demoDb.domains.push({ id: demoDb.seq++, organization_id: orgId, name }));
+      const roles = [
+        { name: "CIO", category: "IT" },
+        { name: "OT Engineering Manager", category: "OT" },
+        { name: "Plant Ops", category: "OT" },
+        { name: "Cyber Risk", category: "Compliance" },
+      ];
+      roles.forEach((r) => demoDb.roles.push({ id: demoDb.seq++, organization_id: orgId, ...r }));
+      const activities = [
+        { name: "Approve OT security changes", domain: "Governance", criticality: "High" },
+        { name: "Maintain OT asset inventory", domain: "Asset Management", criticality: "High" },
+        { name: "Authorize vendor remote access", domain: "Access Management", criticality: "High" },
+      ];
+      activities.forEach((a) => {
+        const domain = demoDb.domains.find((d) => d.name === a.domain);
+        demoDb.activities.push({ id: demoDb.seq++, domain_id: domain.id, ...a });
+      });
+      const workshopId = demoDb.seq++;
+      demoDb.workshops.push({ id: workshopId, organization_id: orgId, name: "Seattle City Light – CIO review" });
+      // Seed a few RACI rows
+      const activityIds = demoDb.activities.map((a) => a.id);
+      const roleByName = (n) => demoDb.roles.find((r) => r.name === n)?.id;
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[0], role_id: roleByName("CIO"), value: "A" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[0], role_id: roleByName("OT Engineering Manager"), value: "R" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[1], role_id: roleByName("OT Engineering Manager"), value: "A" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[1], role_id: roleByName("Plant Ops"), value: "R" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[2], role_id: roleByName("CIO"), value: "A" });
+    }
+
+    function handleDemoRequest(path, options) {
+      seedDemo();
+      const method = (options.method || "GET").toUpperCase();
+      const body = options.body ? JSON.parse(options.body) : {};
+      const notFound = () => { const err = new Error("404 Not Found"); err.status = 404; throw err; };
+
+      if (path === "/api/health") return { message: "Demo API ready" };
+
+      // Collections
+      const collections = {
+        "/organizations": "organizations",
+        "/workshops": "workshops",
+        "/domains": "domains",
+        "/roles": "roles",
+        "/activities": "activities",
+        "/workshop-raci": "raci",
+        "/issues": "issues",
+        "/actions": "actions",
+      };
+
+      if (collections[path] && method === "GET") return demoDb[collections[path]];
+      if (collections[path] && method === "POST") {
+        const item = { id: demoDb.seq++, ...body };
+        demoDb[collections[path]].push(item);
+        return item;
+      }
+
+      const workshopDetail = (suffix) => {
+        const match = path.match(new RegExp(`\\/workshops\\/(\\d+)\\/${suffix}$`));
+        return match ? parseInt(match[1], 10) : null;
+      };
+
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/raci")) {
+        const id = workshopDetail("raci");
+        return demoDb.raci.filter((r) => r.workshop_id === id);
+      }
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/issues")) {
+        const id = workshopDetail("issues");
+        return demoDb.issues.filter((r) => r.workshop_id === id);
+      }
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/actions")) {
+        const id = workshopDetail("actions");
+        return demoDb.actions.filter((r) => r.workshop_id === id);
+      }
+
+      if (method === "POST" && path.startsWith("/workshops/") && path.endsWith("/validate")) {
+        const id = workshopDetail("validate");
+        const activities = demoDb.activities.filter((a) => a.organization_id == null || a.organization_id === (demoDb.workshops.find((w) => w.id === id)?.organization_id));
+        demoDb.issues = demoDb.issues.filter((i) => i.workshop_id !== id);
+        const issues = [];
+        activities.forEach((activity) => {
+          const rows = demoDb.raci.filter((r) => r.workshop_id === id && r.activity_id === activity.id);
+          const aCount = rows.filter((r) => r.value === "A").length;
+          const rCount = rows.filter((r) => r.value === "R").length;
+          if (aCount === 0) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "missing_A", severity: "High", notes: "No accountable role selected" });
+          if (aCount > 1) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "multiple_A", severity: "High", notes: "More than one accountable role selected" });
+          if (rCount === 0) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "no_R", severity: "Medium", notes: "No responsible role selected" });
+        });
+        demoDb.issues.push(...issues);
+        const roleLoad = {};
+        demoDb.raci.filter((r) => r.workshop_id === id).forEach((row) => {
+          roleLoad[row.role_id] = roleLoad[row.role_id] || {};
+          roleLoad[row.role_id][row.value || "None"] = (roleLoad[row.role_id][row.value || "None"] || 0) + 1;
+        });
+        return { created_issues: issues, stats: { roles: roleLoad, total_assignments: demoDb.raci.filter((r) => r.workshop_id === id).length } };
+      }
+
+      if (method === "POST" && path.startsWith("/workshops/") && path.endsWith("/actions/from-issues")) {
+        const id = workshopDetail("actions/from-issues");
+        const newActions = demoDb.issues
+          .filter((i) => i.workshop_id === id)
+          .map((i) => ({ id: demoDb.seq++, workshop_id: id, issue_id: i.id, summary: `Resolve ${i.type} for activity ${i.activity_id}`, status: "planned" }));
+        demoDb.actions.push(...newActions);
+        return newActions;
+      }
+
+      return notFound();
+    }
+
     function resolveApiBase() {
       const params = new URLSearchParams(window.location.search);
       const fromQuery = params.get("api");
       const fromStorage = localStorage.getItem("apiBase");
-      const derived = fromQuery || fromStorage || "";
+      const derived = fromQuery || fromStorage || "demo";
       apiInput.value = derived;
       apiTarget.textContent = derived || "(relative to page)";
       return derived;
@@ -348,6 +473,9 @@
     });
 
     async function fetchJSON(path, options = {}) {
+      if (apiBase === "demo") {
+        return handleDemoRequest(path, options);
+      }
       const base = apiBase.replace(/\/$/, "");
       const url = base ? `${base}${path}` : path;
       const res = await fetch(url, {
@@ -449,6 +577,36 @@
       return `<h4>${title}</h4><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
     }
 
+    function computeRoleLoad(raci) {
+      const load = {};
+      raci.forEach((row) => {
+        const bucket = load[row.role_id] || { R: 0, A: 0, C: 0, I: 0, None: 0 };
+        bucket[row.value || "None"] = (bucket[row.value || "None"] || 0) + 1;
+        load[row.role_id] = bucket;
+      });
+      return load;
+    }
+
+    function renderRoleLoad(load, roles) {
+      if (!Object.keys(load).length) return "<div class=\"small muted\">No assignments yet.</div>";
+      const rows = Object.entries(load)
+        .map(([roleId, counts]) => {
+          const role = roles.find((r) => String(r.id) === String(roleId));
+          return `<tr><td>${role?.name || roleId}</td><td>${counts.A || 0}</td><td>${counts.R || 0}</td><td>${counts.C || 0}</td><td>${counts.I || 0}</td></tr>`;
+        })
+        .join("");
+      return `<table><thead><tr><th>Role</th><th>A</th><th>R</th><th>C</th><th>I</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    function renderGapSummary(issues) {
+      if (!issues.length) return "<div class=\"small muted\">No gaps detected. Run validation after assigning RACI.</div>";
+      const counts = issues.reduce((acc, i) => ({ ...acc, [i.type]: (acc[i.type] || 0) + 1 }), {});
+      const items = Object.entries(counts)
+        .map(([type, count]) => `<li>${type}: <strong>${count}</strong></li>`)
+        .join("");
+      return `<ul class=\"small\">${items}</ul>`;
+    }
+
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities] = await Promise.all([
@@ -471,7 +629,23 @@
           }
         }
 
+        const roleLoad = computeRoleLoad(raci);
+
         tablesEl.innerHTML = [
+          `<div class="panel" style="background:rgba(255,255,255,0.02);">
+            <h3 style="margin-top:0;">Workshop snapshot</h3>
+            <p class="small">Org: <strong>${orgs.length}</strong> • Workshops: <strong>${workshops.length}</strong> • Domains: <strong>${domains.length}</strong> • Activities: <strong>${activities.length}</strong> • RACI rows: <strong>${raci.length}</strong></p>
+            <div class="grid-2">
+              <div>
+                <h4>Role load</h4>
+                ${renderRoleLoad(roleLoad, roles)}
+              </div>
+              <div>
+                <h4>Gap summary</h4>
+                ${renderGapSummary(issues)}
+              </div>
+            </div>
+          </div>`,
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
           renderTable("Domains", domains),

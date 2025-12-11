@@ -24,26 +24,6 @@ def validate_workshop(db: Session, workshop_id: int, overload_threshold: int = 1
 
 
 def _identify_activity_issues(db: Session, workshop_id: int, activity: models.Activity, assignments: List[models.WorkshopRACI]):
-from . import crud, models
-
-
-RACI_VALUES = {None, "R", "A", "C", "I"}
-
-
-def validate_workshop(workshop_id: int):
-    issues: List[models.Issue] = []
-    activities = crud.get_activities_for_workshop(workshop_id)
-    for activity in activities:
-        assignments = crud.get_activity_assignments(workshop_id, activity.id)
-        issue_payloads = _identify_activity_issues(workshop_id, activity, assignments)
-        for payload in issue_payloads:
-            issue = crud.add_issue(payload)
-            issues.append(issue)
-    stats = _build_role_load_stats(workshop_id)
-    return {"created_issues": issues, "stats": stats}
-
-
-def _identify_activity_issues(workshop_id: int, activity: models.Activity, assignments: List[models.WorkshopRACI]):
     payloads = []
     values = defaultdict(list)
     for assignment in assignments:
