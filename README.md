@@ -1,1 +1,1 @@
-# RACISurvey
+# RACI Workshop App scaffolding
