@@ -572,6 +572,7 @@
       const fromQuery = params.get("api");
       const fromStorage = localStorage.getItem("apiBase");
       const derived = fromQuery || fromStorage || "demo";
+      const derived = fromQuery || fromStorage || "";
       apiInput.value = derived;
       apiTarget.textContent = derived || "(relative to page)";
       return derived;
@@ -778,6 +779,9 @@
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities] = await Promise.all([
           fetchJSON("/organizations"),
           fetchJSON("/workshops"),
           fetchJSON("/domains"),
@@ -815,6 +819,7 @@
               </div>
             </div>
           </div>`,
+        tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
           renderTable("Domains", domains),
