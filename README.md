@@ -25,10 +25,12 @@ To serve the dashboard only (for GitHub Pages or a static preview), publish `web
 The repo includes `docs/index.html` (a copy of the dashboard) so you can enable GitHub Pages without extra build steps:
 
 1. In GitHub, open **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
-3. Choose the `main` branch and **/docs** folder, then save.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions** (recommended). This repo includes `.github/workflows/pages.yml` which publishes the `docs/` folder to Pages on every push to `main`.
+   - If you prefer branch-based publishing, select **Deploy from a branch** and choose the `main` branch with the **/docs** folder. After saving, Pages will serve `docs/index.html` instead of the repository README.
 
 GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). If your API is not at the same origin as the page, edit `apiBase` near the bottom of `docs/index.html` to point at your backend (e.g., `https://your-host/api`).
+
+If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
 
 Run tests:
 
