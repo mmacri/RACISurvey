@@ -147,7 +147,6 @@ def test_import_template_creates_entities():
     )
     validation = client.post(f"/workshops/{workshop['id']}/validate").json()
     assert any(issue["type"] == "deviation_from_recommended" for issue in validation["created_issues"])
-=======
     validation = client.post(f"/workshops/{workshop['id']}/validate").json()
     assert validation["created_issues"], "Expected validation issues"
     assert any(i["type"] == "no_R" for i in validation["created_issues"])

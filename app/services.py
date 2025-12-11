@@ -179,7 +179,6 @@ def generate_actions_from_issues(workshop_id: int) -> List[models.ActionItem]:
                 "priority": None,
                 "due_date": None,
             },
-            }
         )
         actions.append(action)
     return actions
