@@ -24,6 +24,26 @@ def validate_workshop(db: Session, workshop_id: int, overload_threshold: int = 1
 
 
 def _identify_activity_issues(db: Session, workshop_id: int, activity: models.Activity, assignments: List[models.WorkshopRACI]):
+from . import crud, models
+
+
+RACI_VALUES = {None, "R", "A", "C", "I"}
+
+
+def validate_workshop(workshop_id: int):
+    issues: List[models.Issue] = []
+    activities = crud.get_activities_for_workshop(workshop_id)
+    for activity in activities:
+        assignments = crud.get_activity_assignments(workshop_id, activity.id)
+        issue_payloads = _identify_activity_issues(workshop_id, activity, assignments)
+        for payload in issue_payloads:
+            issue = crud.add_issue(payload)
+            issues.append(issue)
+    stats = _build_role_load_stats(workshop_id)
+    return {"created_issues": issues, "stats": stats}
+
+
+def _identify_activity_issues(workshop_id: int, activity: models.Activity, assignments: List[models.WorkshopRACI]):
     payloads = []
     values = defaultdict(list)
     for assignment in assignments:
@@ -117,6 +137,16 @@ def _build_role_load_stats(db: Session, workshop_id: int) -> Dict:
     summary = {
         "roles": {str(role_id): dict(counter) for role_id, counter in stats.items()},
         "role_activity_map": role_activity_map,
+    return payloads
+
+
+def _build_role_load_stats(workshop_id: int) -> Dict:
+    stats: Dict[int, Counter] = defaultdict(Counter)
+    assignments = crud.list_workshop_raci(workshop_id)
+    for assignment in assignments:
+        stats[assignment.role_id][assignment.value or "None"] += 1
+    summary = {
+        "roles": {str(role_id): dict(counter) for role_id, counter in stats.items()},
         "total_assignments": len(assignments),
     }
     return summary
@@ -133,6 +163,12 @@ def generate_actions_from_issues(db: Session, workshop_id: int) -> List[models.A
         summary = f"Resolve {issue.type} for activity {issue.activity_id}"
         action = crud.add_action_item(
             db,
+def generate_actions_from_issues(workshop_id: int) -> List[models.ActionItem]:
+    actions: List[models.ActionItem] = []
+    issues = crud.list_issues(workshop_id)
+    for issue in issues:
+        summary = f"Resolve {issue.type} for activity {issue.activity_id}"
+        action = crud.add_action_item(
             {
                 "workshop_id": workshop_id,
                 "issue_id": issue.id,
