@@ -61,6 +61,11 @@ Pass `--dataset <path>` to use your own JSON payload (see `examples/seattle_city
 - `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
 - `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
 - `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
+- `GET /workshops/{id}/export/raci`, `/workshops/{id}/export/gaps`, and `/workshops/{id}/export/actions` – CSV exports of the live workshop state
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
+- `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload
 
 Data is stored in SQLite by default; override `RACI_DATABASE_URL` for PostgreSQL or other SQLAlchemy-supported backends.
 
