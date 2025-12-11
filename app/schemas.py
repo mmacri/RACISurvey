@@ -78,6 +78,7 @@ class RecommendedRACICreate(BaseModel):
     activity_id: int
     role_id: int
     value: Optional[str] = Field(None, regex=RACI_REGEX)
+    value: Optional[str] = Field(None, regex="^[RACI]$|^None$")
 
 
 class RecommendedRACI(RecommendedRACICreate):
@@ -107,6 +108,7 @@ class WorkshopRACICreate(BaseModel):
     activity_id: int
     role_id: int
     value: Optional[str] = Field(None, regex=RACI_REGEX)
+    value: Optional[str] = Field(None, regex="^[RACI]$|^None$")
     source: Optional[str] = "workshop"
 
 
@@ -195,3 +197,12 @@ class ImportPayload(BaseModel):
     roles: List[ImportRole]
     activities: List[ImportActivity]
     recommended: List[ImportRecommendedRACICreate] = []
+class ImportPayload(BaseModel):
+    organization: OrganizationCreate
+    domains: List[DomainCreate]
+    roles: List[RoleCreate]
+    activities: List[ActivityCreate]
+    recommended: List[RecommendedRACICreate] = []
+class ValidationResult(BaseModel):
+    created_issues: List[Issue]
+    stats: dict
