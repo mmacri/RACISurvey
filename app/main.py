@@ -17,6 +17,10 @@ from .schemas import (
     ActivityCreate,
     Domain,
     DomainCreate,
+    ImportActivity,
+    ImportPayload,
+    ImportRecommendedRACICreate,
+    ImportRole,
     ImportPayload,
     Organization,
     OrganizationCreate,
@@ -40,10 +44,7 @@ app = FastAPI(title="OT RACI Workshop App")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "https://your.production.domain"],  # Be specific
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"], # TODO: Add production frontend URL
 )
 
 
@@ -167,6 +168,58 @@ def build_actions_from_issues(workshop_id: int, db=Depends(get_db)):
 
 @app.post("/import", response_model=schemas.Organization)
 def import_template(payload: ImportPayload, db=Depends(get_db)):
+    def _to_dict(item):
+        return item.dict() if hasattr(item, "dict") else dict(item)
+
+    organization = crud.create_organization(db, _to_dict(payload.organization))
+    domain_map = {}
+    role_map = {}
+    activity_map = {}
+
+    for d in payload.domains:
+        domain_data = _to_dict(d)
+        domain = crud.create_domain(db, {**domain_data, "organization_id": organization.id})
+        domain_map[domain.name] = domain
+
+    for r in payload.roles:
+        role_data = _to_dict(r)
+        role = crud.create_role(db, {**role_data, "organization_id": organization.id})
+        role_map[role.name] = role
+
+    for activity in payload.activities:
+        act_data = _to_dict(activity)
+        domain = domain_map.get(act_data.get("domain") or getattr(activity, "domain", None))
+        if not domain:
+            name = act_data.get("name") or getattr(activity, "name", "")
+            missing_domain = act_data.get("domain") or getattr(activity, "domain", "")
+            raise HTTPException(status_code=400, detail=f"Domain '{missing_domain}' missing for activity '{name}'")
+        created = crud.create_activity(
+            db,
+            {
+                "name": act_data.get("name") or getattr(activity, "name", ""),
+                "description": act_data.get("description") or getattr(activity, "description", None),
+                "code": act_data.get("code") or getattr(activity, "code", None),
+                "criticality": act_data.get("criticality") or getattr(activity, "criticality", None),
+                "framework_refs": act_data.get("framework_refs") or getattr(activity, "framework_refs", None),
+                "domain_id": domain.id,
+            },
+        )
+        activity_map[created.name] = created
+
+    if payload.recommended:
+        rec_payloads = []
+        for rec in payload.recommended:
+            rec_data = _to_dict(rec)
+            activity = activity_map.get(rec_data.get("activity_name") or getattr(rec, "activity_name", None))
+            role = role_map.get(rec_data.get("role_name") or getattr(rec, "role_name", None))
+            if not activity or not role:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid recommendation reference {rec_data.get('activity_name')}/{rec_data.get('role_name')}",
+                )
+            rec_payloads.append({"activity_id": activity.id, "role_id": role.id, "value": rec_data.get("value") or getattr(rec, "value", None)})
+        crud.set_recommended_raci(db, rec_payloads)
+
     organization = crud.create_organization(db, payload.organization.dict())
     for d in payload.domains:
         crud.create_domain(db, {**d.dict(), "organization_id": organization.id})
@@ -226,6 +279,15 @@ def export_actions(workshop_id: int, db=Depends(get_db)):
             ]
         )
     return buffer.getvalue()
+
+
+if __name__ == "__main__":
+    try:
+        import uvicorn
+
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    except ImportError:  # pragma: no cover - only triggers without uvicorn installed
+        print("Install uvicorn to run the API server: pip install -r requirements.txt")
 def get_db():
     return db_instance
 

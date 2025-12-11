@@ -170,6 +170,33 @@ class RACIExportRow(BaseModel):
     role_values: dict
 
 
+class ImportRole(BaseModel):
+    name: str
+    category: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ImportActivity(BaseModel):
+    domain: str
+    name: str
+    description: Optional[str] = None
+    code: Optional[str] = None
+    criticality: Optional[str] = None
+    framework_refs: Optional[str] = None
+
+
+class ImportRecommendedRACICreate(BaseModel):
+    activity_name: str
+    role_name: str
+    value: Optional[str] = Field(None, regex="^[RACI]$|^None$")
+
+
+class ImportPayload(BaseModel):
+    organization: OrganizationCreate
+    domains: List[DomainCreate]
+    roles: List[ImportRole]
+    activities: List[ImportActivity]
+    recommended: List[ImportRecommendedRACICreate] = []
 class ImportPayload(BaseModel):
     organization: OrganizationCreate
     domains: List[DomainCreate]

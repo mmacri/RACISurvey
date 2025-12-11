@@ -19,6 +19,23 @@ uvicorn app.main:app --reload
 ```
 
 To serve the dashboard only (for GitHub Pages or a static preview), publish `web/index.html` and point it at your deployed API by setting `apiBase` in the inline script.
+
+Run tests:
+
+```bash
+pytest
+```
+
+### Seattle City Light demo dataset
+
+To preload a workshop tailored for Seattle City Light leadership, seed the database from the curated import payload:
+
+```bash
+python -m app.seed
+```
+
+Pass `--dataset <path>` to use your own JSON payload (see `examples/seattle_city_light_import.json` for the expected shape). Start the API after seeding and load the dashboard at http://localhost:8000/ to review the prebuilt domains, roles, activities, and recommended RACI for the CIO and OT teams.
+
 This repository contains a lightweight, self-contained implementation of the OT RACI Workshop App defined in `PDI.md`. It uses an in-memory store and a minimal FastAPI-compatible shim so it can run without external dependencies or network access.
 
 ## Quick start
@@ -49,6 +66,7 @@ pytest
 - `POST /workshops/{id}/validate` – check for missing/multiple A, missing R, deviations vs recommended, and role overload
 - `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
 - `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
 - `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload
 
 Data is stored in SQLite by default; override `RACI_DATABASE_URL` for PostgreSQL or other SQLAlchemy-supported backends.

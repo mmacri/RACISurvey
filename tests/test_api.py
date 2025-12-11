@@ -105,6 +105,49 @@ def test_workshop_validation_and_actions():
 
     raci_csv = client.get(f"/workshops/{workshop['id']}/export/raci").text
     assert "Activity" in raci_csv and "CIO" in raci_csv
+
+
+def test_import_template_creates_entities():
+    client = TestClient(app)
+    payload = {
+        "organization": {"name": "Seattle City Light", "industry": "Utility"},
+        "domains": [{"name": "Governance"}],
+        "roles": [{"name": "CIO"}, {"name": "OT Engineering Manager"}],
+        "activities": [
+            {
+                "domain": "Governance",
+                "name": "Approve OT patching",
+                "criticality": "High",
+                "framework_refs": "NIST CSF PR",
+            }
+        ],
+        "recommended": [
+            {"activity_name": "Approve OT patching", "role_name": "CIO", "value": "A"}
+        ],
+    }
+
+    org = client.post("/import", json=payload).json()
+    domains = client.get("/domains", params={"organization_id": org["id"]}).json()
+    roles = client.get("/roles", params={"organization_id": org["id"]}).json()
+    activities = client.get("/activities").json()
+
+    assert len(domains) == 1
+    assert any(r["name"] == "CIO" for r in roles)
+    assert activities[0]["domain_id"] == domains[0]["id"]
+
+    workshop = client.post("/workshops", json={"organization_id": org["id"], "name": "SCL Session"}).json()
+    client.post(
+        "/workshop-raci",
+        json={
+            "workshop_id": workshop["id"],
+            "activity_id": activities[0]["id"],
+            "role_id": roles[0]["id"],
+            "value": "R",
+        },
+    )
+    validation = client.post(f"/workshops/{workshop['id']}/validate").json()
+    assert any(issue["type"] == "deviation_from_recommended" for issue in validation["created_issues"])
+=======
     validation = client.post(f"/workshops/{workshop['id']}/validate").json()
     assert validation["created_issues"], "Expected validation issues"
     assert any(i["type"] == "no_R" for i in validation["created_issues"])
