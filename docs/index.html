@@ -70,6 +70,10 @@
     main {
       padding: 24px 32px 48px;
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto 48px;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
     }
@@ -79,6 +83,13 @@
       border-radius: 12px;
       padding: 16px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 12px;
+      padding: 14px;
+      height: 100%;
     }
     .panel h2 {
       margin-top: 0;
@@ -122,6 +133,12 @@
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 10px;
     }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .wide { grid-column: 1 / -1; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -194,6 +211,7 @@
         <a href="#raci-assignments">RACI</a>
         <a href="#validate-actions">Validation</a>
         <a href="#exports">Outputs</a>
+        <a href="#output-dashboard">Reporting</a>
         <a href="#data-overview">Snapshots</a>
       </nav>
       <div class="inline-actions">
@@ -400,6 +418,13 @@
       <p class="small muted">Exports use the workshop ID shown above. Remember it to rehydrate the same session later.</p>
     </section>
 
+    <section class="panel wide" id="output-dashboard">
+      <h2>Reporting & content dashboard</h2>
+      <p class="small">Preview what you can take to the workshop: live reports, example narrative blurbs, and a snapshot of what is currently stored in the database.</p>
+      <div class="grid-3" id="output-cards"></div>
+    </section>
+
+    <section class="panel" id="data-overview">
     <section class="panel" id="data-overview">
     <section class="panel">
       <h2>Data overview</h2>
@@ -417,6 +442,7 @@
     const workshopSelect = document.getElementById("workshop-select");
     const setWorkshopBtn = document.getElementById("set-workshop");
     const rememberWorkshopBtn = document.getElementById("remember-workshop");
+    const outputCardsEl = document.getElementById("output-cards");
     const tablesEl = document.getElementById("tables");
     const validationEl = document.getElementById("validation-results");
     const validateWorkshopInput = document.getElementById("validate-workshop-id");
@@ -924,6 +950,51 @@
       return `<div class=\"grid-2\">${cards}</div>`;
     }
 
+    function renderOutputCards(snapshot) {
+      if (!snapshot) return "<div class=\"small muted\">Load data first to see report-ready content.</div>";
+      const { orgs, workshops, domains, activities, raci, issues, actions, recommended } = snapshot;
+      const workshopId = getCurrentWorkshopId() || "not set";
+      const latestAction = actions[actions.length - 1];
+      const exampleActivity = activities[0];
+      const exampleRole = snapshot.roles?.[0];
+      const issueCount = issues.length;
+      const actionCount = actions.length;
+
+      return `
+        <div class="card">
+          <h3 style="margin-top:0;">Report package</h3>
+          <p class="small">Use the buttons above to export CSVs/JSON. Current workshop: <strong>${workshopId}</strong>.</p>
+          <ul class="small">
+            <li>Activities with RACI rows: <strong>${raci.length}</strong></li>
+            <li>Recommended references: <strong>${recommended.length}</strong></li>
+            <li>Domains covered: <strong>${domains.length}</strong></li>
+          </ul>
+          <p class="small muted">Tip: Run validation before exporting to capture gaps in the action plan.</p>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Example content</h3>
+          <p class="small">Use this blurb in the workshop deck or export notes.</p>
+          <div class="small" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);padding:10px;border-radius:10px;">
+            ${exampleActivity ? `For <strong>${exampleActivity.name}</strong>, the team aligned on <strong>${exampleRole?.name || "a role"}</strong> as accountable and confirmed handoffs for R/C/I. Next review targets unresolved gaps before production rollout.` : "Load a template to generate an example narrative."}
+          </div>
+          <p class="small muted" style="margin-top:8px;">This auto-updates from the first activity/role in your dataset.</p>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Database snapshot</h3>
+          <p class="small">Stored items ready for download or API use.</p>
+          <ul class="small">
+            <li>Organizations: <strong>${orgs.length}</strong></li>
+            <li>Workshops: <strong>${workshops.length}</strong></li>
+            <li>Issues: <strong>${issueCount}</strong> • Actions: <strong>${actionCount}</strong>${latestAction ? ` (latest: ${latestAction.summary || latestAction.id})` : ""}</li>
+          </ul>
+          <p class="small muted">Switch API base or run in demo mode to compare datasets on GitHub Pages.</p>
+        </div>
+      `;
+    }
+
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
@@ -959,6 +1030,8 @@
         const domainStats = computeDomainStats(domains, activities, raci, recommended);
 
         lastSnapshot = { orgs, workshops, domains, roles, activities, recommended, raci, issues, actions };
+
+        outputCardsEl.innerHTML = renderOutputCards(lastSnapshot);
 
         tablesEl.innerHTML = [
           `<div class="panel" style="background:rgba(255,255,255,0.02);">
