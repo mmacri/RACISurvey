@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workshop Setup • RACI Wizard</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+</head>
+<body>
+  <header>
+    <a class="logo" href="../index.html">
+      <img src="../assets/logo.svg" alt="Logo" />
+      <div>
+        <div class="badge">Step 2</div>
+        <h1>Workshop setup</h1>
+        <p class="muted">Name the workshop, facilitator, and map roster to template roles.</p>
+      </div>
+    </a>
+    <nav>
+      <a data-page="dashboard" href="../index.html">Dashboard</a>
+      <a data-page="template" href="template.html">Template</a>
+      <a data-page="setup" class="active" href="workshop-setup.html">Setup</a>
+      <a data-page="decide" href="decide.html">Decide</a>
+      <a data-page="review" href="review.html">Review</a>
+      <a data-page="export" href="export.html">Export</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Workshop details</h2>
+      <form id="setup-form">
+        <div class="split">
+          <div><label>Organization</label><input name="organization" placeholder="e.g., Mujib Energy" required /></div>
+          <div><label>Business unit</label><input name="businessUnit" placeholder="OT / IT" /></div>
+          <div><label>Workshop name</label><input name="name" placeholder="CIO governance review" required /></div>
+          <div><label>Date</label><input type="date" name="date" /></div>
+          <div><label>Facilitator</label><input name="facilitator" placeholder="Name" /></div>
+        </div>
+        <label>Notes</label>
+        <textarea name="notes" rows="3" placeholder="Goals, scope, assumptions"></textarea>
+        <button type="submit">Save workshop</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h3>Roster mapping</h3>
+      <p class="muted">Map attendees to template roles. Mark vacancies for quick resolution in the room.</p>
+      <div class="card-list" id="roster"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { loadState, setOrganizationMeta, setWorkshopMeta } from "../js/state.js";
+
+    const form = document.getElementById("setup-form");
+    const roster = document.getElementById("roster");
+
+    function renderRoster(state) {
+      roster.innerHTML = state.roles
+        .map(
+          (role) => `
+          <div class="stat">
+            <div>
+              <strong>${role.roleName}</strong>
+              <div class="muted">${role.source || "Template role"}</div>
+            </div>
+            <input data-role="${role.roleId}" placeholder="Attendee or leave vacant" />
+          </div>`
+        )
+        .join("") || '<p class="muted">Import the template to populate roles.</p>';
+    }
+
+    function hydrateForm() {
+      const state = loadState();
+      form.organization.value = state.organization.name || "";
+      form.businessUnit.value = state.organization.businessUnit || "";
+      form.name.value = state.workshop.name || "";
+      form.date.value = state.workshop.date || "";
+      form.facilitator.value = state.workshop.facilitator || "";
+      form.notes.value = state.organization.notes || "";
+      renderRoster(state);
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      setOrganizationMeta({ name: data.organization, businessUnit: data.businessUnit, notes: data.notes });
+      setWorkshopMeta({ name: data.name, date: data.date, facilitator: data.facilitator });
+      hydrateForm();
+    });
+
+    hydrateForm();
+  </script>
+</body>
+</html>

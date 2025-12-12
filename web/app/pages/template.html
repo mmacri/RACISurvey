@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template • RACI Wizard</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header>
+    <a class="logo" href="../index.html">
+      <img src="../assets/logo.svg" alt="Logo" />
+      <div>
+        <div class="badge">Step 1</div>
+        <h1>Import Excel template</h1>
+        <p class="muted">Excel is canonical. Parse roles/domains/activities and recommended RACI.</p>
+      </div>
+    </a>
+    <nav>
+      <a data-page="dashboard" href="../index.html">Dashboard</a>
+      <a data-page="template" class="active" href="template.html">Template</a>
+      <a data-page="setup" href="workshop-setup.html">Setup</a>
+      <a data-page="decide" href="decide.html">Decide</a>
+      <a data-page="review" href="review.html">Review</a>
+      <a data-page="export" href="export.html">Export</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Upload canonical Excel</h2>
+      <p>Sheets detected: APPLICATIONS RACI, INFRASTRUCTURE RACI, POLICY RACI, Hi-Level sheets.</p>
+      <div class="split">
+        <div>
+          <input type="file" id="excel-file" accept=".xlsx,.xls" />
+          <p class="muted">Data stays in your browser. Nothing is uploaded.</p>
+        </div>
+        <div>
+          <button id="reset-state" class="secondary">Reset workshop</button>
+          <button id="import-json" class="secondary">Import workshop JSON</button>
+          <button id="export-json">Export workshop JSON</button>
+          <textarea id="json-area" placeholder="Paste workshop JSON" rows="4"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Detection</h3>
+      <div id="template-results" class="card-list"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { parseExcelFile } from "../js/excel.js";
+    import { exportState, importState, loadState, resetState } from "../js/state.js";
+
+    const fileInput = document.getElementById("excel-file");
+    const results = document.getElementById("template-results");
+    const jsonArea = document.getElementById("json-area");
+
+    function renderStateSummary(state) {
+      const domains = new Set(state.activities.map((a) => a.domain));
+      results.innerHTML = `
+        <div class="stat"><div>Template version</div><strong>${state.templateMeta.version || "n/a"}</strong></div>
+        <div class="stat"><div>Roles</div><strong>${state.roles.length}</strong></div>
+        <div class="stat"><div>Activities</div><strong>${state.activities.length}</strong></div>
+        <div class="stat"><div>Domains</div><strong>${domains.size}</strong></div>
+        ${state.templateMeta.warnings.map((w) => `<div class="alert warning">${w}</div>`).join("")}
+      `;
+    }
+
+    renderStateSummary(loadState());
+
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const parsed = await parseExcelFile(file);
+      results.innerHTML = `<div class="alert success">Parsed ${parsed.activities.length} activities, ${parsed.roles.length} roles.</div>`;
+      renderStateSummary(loadState());
+    });
+
+    document.getElementById("export-json").addEventListener("click", () => {
+      const blob = new Blob([exportState()], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "workshop.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("import-json").addEventListener("click", () => {
+      const raw = jsonArea.value.trim();
+      if (!raw) return alert("Paste workshop JSON first.");
+      try {
+        importState(raw);
+        renderStateSummary(loadState());
+        alert("Workshop loaded");
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    document.getElementById("reset-state").addEventListener("click", () => {
+      resetState();
+      renderStateSummary(loadState());
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RACI Workshop Wizard</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header>
+    <a class="logo" href="index.html">
+      <img src="assets/logo.svg" alt="Logo" />
+      <div>
+        <div class="badge">Self-hosted</div>
+        <h1>RACI Workshop Wizard</h1>
+        <p class="muted">Excel-in, guided workshop out.</p>
+      </div>
+    </a>
+    <nav>
+      <a data-page="dashboard" class="active" href="index.html">Dashboard</a>
+      <a data-page="template" href="pages/template.html">Template</a>
+      <a data-page="setup" href="pages/workshop-setup.html">Setup</a>
+      <a data-page="decide" href="pages/decide.html">Decide</a>
+      <a data-page="review" href="pages/review.html">Review</a>
+      <a data-page="export" href="pages/export.html">Export</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel hero">
+      <div>
+        <div class="badge">Workshop control center</div>
+        <h2>Excel-in → Workshop-out</h2>
+        <p>
+          Start from the canonical Excel template, capture decisions in a guided wizard, validate RACI rules live, and walk out with an executive pack.
+        </p>
+        <div class="inline">
+          <a class="tag" href="pages/template.html">Import Excel template</a>
+          <a class="tag" href="pages/workshop-setup.html">Start new workshop</a>
+          <a class="tag" href="pages/decide.html">Continue wizard</a>
+        </div>
+      </div>
+      <div class="panel" data-workshop-summary></div>
+    </section>
+
+    <section class="panel">
+      <h3>Navigation</h3>
+      <div class="cards">
+        <div class="panel">
+          <h4>Start new workshop</h4>
+          <p>Upload Excel, name your workshop, map roster, and pick scope.</p>
+          <a class="tag" href="pages/template.html">Go to Template</a>
+        </div>
+        <div class="panel">
+          <h4>Continue workshop</h4>
+          <p>Resume where you left off—state is auto-saved in your browser.</p>
+          <a class="tag" href="pages/workshop-setup.html">Go to Setup</a>
+        </div>
+        <div class="panel">
+          <h4>Generate executive pack</h4>
+          <p>Download Excel/PDF/CSV outputs and the executive narrative.</p>
+          <a class="tag" href="pages/export.html">Go to Export</a>
+        </div>
+        <div class="panel">
+          <h4>View gaps & actions</h4>
+          <p>Live validation of missing A/R, overloaded roles, and disputes.</p>
+          <a class="tag" href="pages/review.html">Go to Review</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Progress by domain</h3>
+      <div data-progress></div>
+    </section>
+  </main>
+  <script type="module">
+    import { renderProgressSummary, renderCurrentWorkshop } from "./js/wizard.js";
+    renderProgressSummary();
+    renderCurrentWorkshop();
+  </script>
+</body>
+</html>
