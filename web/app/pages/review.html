@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review • RACI Wizard</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+</head>
+<body>
+  <header>
+    <a class="logo" href="../index.html">
+      <img src="../assets/logo.svg" alt="Logo" />
+      <div>
+        <div class="badge">Step 6</div>
+        <h1>Gaps & actions</h1>
+        <p class="muted">Live validation with top gaps and action plan.</p>
+      </div>
+    </a>
+    <nav>
+      <a href="../index.html">Dashboard</a>
+      <a href="template.html">Template</a>
+      <a href="workshop-setup.html">Setup</a>
+      <a href="scope.html">Scope</a>
+      <a href="decide.html">Decide</a>
+      <a class="active" href="review.html">Review</a>
+      <a href="export.html">Export</a>
+    </nav>
+  </header>
+  <main>
+    <section class="panel" data-report></section>
+  </main>
+
+  <script type="module">
+    import { renderReport } from "../js/report.js";
+    renderReport();
+  </script>
+</body>
+</html>
