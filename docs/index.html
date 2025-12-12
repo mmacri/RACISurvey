@@ -74,12 +74,21 @@
       gap: 24px;
       max-width: 1200px;
       margin: 0 auto 64px;
+      padding: 24px 32px 48px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto 48px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
     }
     .panel {
       background: rgba(17, 24, 39, 0.85);
       border: 1px solid rgba(148, 163, 184, 0.15);
       border-radius: 12px;
       padding: 20px;
+      padding: 16px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
     }
     .card {
@@ -174,6 +183,11 @@
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
       align-items: stretch;
+      grid-column: 1/-1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      align-items: center;
     }
     .hero p { color: var(--muted); line-height: 1.6; }
     code {
@@ -221,6 +235,9 @@
         <button type="button" id="ping-api">Ping API</button>
         <button type="button" id="refresh-data">Refresh data</button>
       </div>
+    <div class="inline-actions">
+      <button type="button" id="ping-api">Ping API</button>
+      <button type="button" id="refresh-data">Refresh data</button>
     </div>
   </header>
 
@@ -263,6 +280,27 @@
     </section>
 
     <section class="panel section-stack" id="api-status">
+    <section class="panel hero" id="control-center">
+    <section class="panel hero">
+      <div>
+        <h2>Workshop control center</h2>
+        <p>Load your template (organizations, domains, roles, activities) and drive workshops end-to-end from this page. All calls stay local to your deployment, keeping workshops private and GitHub-friendly.</p>
+        <p class="small">For scripted workflows, hit <code>/api/health</code> to verify readiness, then use the POST endpoints for organizations, workshops, and RACI entries. Exports are available under <code>/workshops/&lt;id&gt;/export/*</code>.</p>
+      </div>
+      <div class="panel" style="margin:0;">
+        <h3 style="margin-top:0;">Quick steps</h3>
+        <ol class="small" style="margin:0; padding-left:18px; line-height:1.6;">
+          <li>Create an organization.</li>
+          <li>Add domains, roles, and activities.</li>
+          <li>Create a workshop for the organization.</li>
+          <li>Assign R/A/C/I values per activity and role.</li>
+          <li>Run validation and generate actions/exports.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel" id="api-status">
+    <section class="panel">
       <h2>API status</h2>
       <div id="health" class="status">Waiting for ping...</div>
       <div class="api-config">
@@ -277,6 +315,8 @@
     </section>
 
     <section class="panel section-stack" id="template-import">
+    <section class="panel" id="template-import">
+    <section class="panel">
       <h2>Template import</h2>
       <p class="small">Upload a JSON template (matching <code>/templates/example</code>) to seed organizations, domains, roles, activities, and recommended RACI in one step.</p>
       <div class="grid-2">
@@ -294,6 +334,11 @@
     </section>
 
     <section class="panel section-stack" id="organizations">
+    <section class="panel" id="organizations">
+      <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, update <code>apiBase</code> in the script below to match your path.</p>
+    </section>
+
+    <section class="panel">
       <h2>Create organization</h2>
       <form id="form-org">
         <input name="name" placeholder="Name (e.g., Contoso Energy)" required />
@@ -304,6 +349,8 @@
     </section>
 
     <section class="panel section-stack" id="workshops">
+    <section class="panel" id="workshops">
+    <section class="panel">
       <h2>Create workshop</h2>
       <form id="form-workshop">
         <div class="grid-2">
@@ -331,6 +378,15 @@
     </section>
 
     <section class="panel section-stack" id="domains-roles">
+    <section class="panel" id="domains-roles">
+          <input name="description" placeholder="Description" />
+        </div>
+        <button type="submit">Create workshop</button>
+      </form>
+      <p class="small muted">Current workshop ID: <span id="current-workshop">not set</span></p>
+    </section>
+
+    <section class="panel">
       <h2>Domains & Roles</h2>
       <form id="form-domain">
         <div class="grid-2">
@@ -355,6 +411,8 @@
     </section>
 
     <section class="panel section-stack" id="activities">
+    <section class="panel" id="activities">
+    <section class="panel">
       <h2>Activities</h2>
       <form id="form-activity">
         <div class="grid-2">
@@ -372,6 +430,8 @@
     </section>
 
     <section class="panel section-stack" id="raci-assignments">
+    <section class="panel" id="raci-assignments">
+    <section class="panel">
       <h2>RACI assignments</h2>
       <form id="form-raci">
         <div class="grid-2">
@@ -393,6 +453,8 @@
     </section>
 
     <section class="panel section-stack" id="validate-actions">
+    <section class="panel" id="validate-actions">
+    <section class="panel">
       <h2>Validate & Actions</h2>
       <div class="grid-2">
         <input id="validate-workshop-id" placeholder="Workshop ID" />
@@ -407,6 +469,7 @@
     </section>
 
     <section class="panel section-stack" id="exports">
+    <section class="panel" id="exports">
       <h2>Workshop outputs</h2>
       <p class="small">Download the live RACI matrix, gap list, and action plan for the current workshop. Works in demo mode on GitHub Pages or against your FastAPI backend.</p>
       <div class="inline-actions" style="flex-wrap:wrap;">
@@ -450,6 +513,15 @@
     </section>
 
     <section class="panel section-stack" id="data-overview">
+    <section class="panel wide" id="output-dashboard">
+      <h2>Reporting & content dashboard</h2>
+      <p class="small">Preview what you can take to the workshop: live reports, example narrative blurbs, and a snapshot of what is currently stored in the database.</p>
+      <div class="grid-3" id="output-cards"></div>
+    </section>
+
+    <section class="panel" id="data-overview">
+    <section class="panel" id="data-overview">
+    <section class="panel">
       <h2>Data overview</h2>
       <div class="small muted">These tables read directly from the API. Set a current workshop to view issues/actions.</div>
       <div id="tables"></div>
@@ -718,6 +790,7 @@
       const fromQuery = params.get("api");
       const fromStorage = localStorage.getItem("apiBase");
       const derived = fromQuery || fromStorage || "demo";
+      const derived = fromQuery || fromStorage || "";
       apiInput.value = derived;
       apiTarget.textContent = derived || "(relative to page)";
       return derived;
@@ -1050,6 +1123,18 @@
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities] = await Promise.all([
           fetchJSON("/organizations"),
           fetchJSON("/workshops"),
           fetchJSON("/domains"),
@@ -1100,6 +1185,7 @@
             <p class="small">Track accountable/responsible completion per domain to mirror the workshop walkthrough flow.</p>
             ${renderDomainCards(domainStats)}
           </div>`,
+        tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
           renderTable("Domains", domains),

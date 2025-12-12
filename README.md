@@ -41,6 +41,12 @@ If you want the Pages site to render even without a backend, leave the API base 
 - All widgets are mirrored in both `web/index.html` and `docs/index.html` so local hosting and GitHub Pages behave the same.
 - A reporting dashboard panel bundles export links, example narrative text, and a live database snapshot so facilitators can grab workshop-ready outputs without hunting through tables. The page now includes dataset selectors and roomier sections so each dashboard (API, templates, organizations, activities, RACI, validation, reporting) occupies its own space for executive-ready reviews.
 - The landing grid is capped at a readable width and cards auto-resize for executive workshop displays.
+- A reporting dashboard panel bundles export links, example narrative text, and a live database snapshot so facilitators can grab workshop-ready outputs without hunting through tables.
+- The landing grid is capped at a readable width and cards auto-resize for executive workshop displays.
+GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). If your API is not at the same origin as the page, edit `apiBase` near the bottom of `docs/index.html` to point at your backend (e.g., `https://your-host/api`).
+
+If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
+
 
 Run tests:
 
@@ -72,6 +78,27 @@ python -m app.seed
 
 Pass `--dataset <path>` to use your own JSON payload (see `examples/seattle_city_light_import.json` for the expected shape). Start the API after seeding and load the dashboard at http://localhost:8000/ to review the prebuilt domains, roles, activities, and recommended RACI for the CIO and OT teams.
 
+
+This repository contains a lightweight, self-contained implementation of the OT RACI Workshop App defined in `PDI.md`. It uses an in-memory store and a minimal FastAPI-compatible shim so it can run without external dependencies or network access.
+
+## Quick start
+
+No installation is required beyond Python 3.11+.
+
+Run the API locally:
+
+```bash
+python -m app.main
+```
+
+(Under the shim, routes are callable via the included `TestClient`; for real deployments you can replace the shim with FastAPI/uvicorn.)
+
+Run tests:
+
+```bash
+pytest
+```
+
 ## Key endpoints
 
 - `POST /organizations` – create an organization
@@ -83,7 +110,16 @@ Pass `--dataset <path>` to use your own JSON payload (see `examples/seattle_city
 - `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
 - `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
 - `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
+- `GET /workshops/{id}/export/raci`, `/workshops/{id}/export/gaps`, and `/workshops/{id}/export/actions` – CSV exports of the live workshop state
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
+- `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
+- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload
 
 Data is stored in SQLite by default; override `RACI_DATABASE_URL` for PostgreSQL or other SQLAlchemy-supported backends.
 
 > Note: The `stubs/` directory provides lightweight stand-ins for `fastapi`, `pydantic`, and `sqlalchemy` so the test suite can run in offline environments. For real deployments, install the dependencies from `requirements.txt`.
+- `POST /workshops/{id}/validate` – check for missing/multiple A or missing R and create issues
+- `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
+
+Data is stored in memory for easy demos; swap `app/database.py` with a persistent backend to productionize.
