@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gap & Conflict Review</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body data-page="review">
+    <header>
+      <a class="logo" href="index.html">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/svg/1f4ca.svg" alt="Logo" />
+        <div>
+          <div class="badge">Live validation</div>
+          <h1>Gap & Conflict Review</h1>
+          <small>Surface ambiguity, conflicts, and overload before the workshop ends.</small>
+        </div>
+      </a>
+      <nav>
+        <a href="index.html">Dashboard</a>
+        <a href="workshop.html">Workshop</a>
+        <a class="active" href="review.html">Review</a>
+        <a href="export.html">Export</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel hero">
+        <div>
+          <div class="badge">Why this matters</div>
+          <h2>Resolve ambiguity while everyone is in the room</h2>
+          <p>Heatmaps and conflict lists update instantly as RACI decisions are captured. Flag items for follow-up or mark them as accepted risk.</p>
+        </div>
+        <div class="panel">
+          <h4>Workshop</h4>
+          <p class="muted">Uses current session from the workshop wizard.</p>
+          <div class="flex">
+            <a class="tag" href="workshop.html">Back to wizard</a>
+            <a class="tag secondary" href="export.html">Generate outputs</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="heatmap">
+        <h3>Heatmap by domain & role</h3>
+        <div data-heatmap></div>
+      </section>
+
+      <section class="panel" id="conflicts">
+        <h3>Cross-workshop conflicts</h3>
+        <div data-conflicts></div>
+      </section>
+
+      <section class="panel" id="actions">
+        <h3>Action register</h3>
+        <div data-actions></div>
+      </section>
+    </main>
+    <script type="module" src="assets/wizard.js"></script>
+  </body>
+</html>

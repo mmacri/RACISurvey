@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Executive Output Engine</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body data-page="export">
+    <header>
+      <a class="logo" href="index.html">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/svg/1f4e4.svg" alt="Logo" />
+        <div>
+          <div class="badge">Executive-ready</div>
+          <h1>Output Engine</h1>
+          <small>Generates PPT/PDF/Excel-friendly assets from live workshop data.</small>
+        </div>
+      </a>
+      <nav>
+        <a href="index.html">Dashboard</a>
+        <a href="workshop.html">Workshop</a>
+        <a href="review.html">Review</a>
+        <a class="active" href="export.html">Export</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel hero">
+        <div>
+          <div class="badge">Outputs</div>
+          <h2>Executive pack, matrix, and gap register</h2>
+          <p>Exports honor the Excel-derived schema—no invented rows. Use them immediately in leadership readouts.</p>
+          <div class="flex">
+            <button data-export-summary-btn class="primary" type="button">Download executive summary</button>
+            <button data-export-matrix class="secondary" type="button">Download RACI matrix (Excel/CSV)</button>
+            <button data-export-gaps class="secondary" type="button">Download gap register</button>
+          </div>
+        </div>
+        <div class="panel" data-export-summary></div>
+      </section>
+
+      <section class="panel" id="matrix">
+        <h3>What’s inside the matrix</h3>
+        <ul>
+          <li>One row per activity scoped from Excel</li>
+          <li>A/R/C/I roles exactly as assigned</li>
+          <li>Confidence captured as a signal for risk</li>
+          <li>Comments preserved for context</li>
+        </ul>
+      </section>
+
+      <section class="panel" id="register">
+        <h3>Gap register</h3>
+        <p class="muted">Issue, impact, recommended action, owner, and target date—ready for PMO intake.</p>
+      </section>
+    </main>
+
+    <script type="module" src="assets/export.js"></script>
+  </body>
+</html>

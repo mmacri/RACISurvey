@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "version": "2024.10",
+    "source": "Excel import",
+    "updated": "2024-10-01",
+    "notes": "Sample derived schema for workshops"
+  },
+  "roles": [
+    { "id": "cio", "name": "Chief Information Officer", "group": "Executive" },
+    { "id": "dir-apps", "name": "Director, Applications", "group": "IT Leadership" },
+    { "id": "dir-infra", "name": "Director, Infrastructure", "group": "IT Leadership" },
+    { "id": "security", "name": "Head of Cybersecurity", "group": "Risk & Security" },
+    { "id": "ops", "name": "Operations Manager", "group": "Service" },
+    { "id": "finance", "name": "Finance Partner", "group": "Business" }
+  ],
+  "domains": [
+    {
+      "id": "strategy",
+      "name": "Strategy & Planning",
+      "capabilities": [
+        {
+          "id": "portfolio",
+          "name": "Portfolio Governance",
+          "activities": [
+            {
+              "id": "roadmap",
+              "name": "Maintain enterprise technology roadmap",
+              "description": "Align technology outcomes to business priorities with rolling 18-month visibility",
+              "expected": { "A": ["cio"], "R": ["dir-apps"], "C": ["finance"], "I": ["dir-infra"] }
+            },
+            {
+              "id": "intake",
+              "name": "Intake & prioritization",
+              "description": "Prioritize investment and sequencing criteria across domains",
+              "expected": { "A": ["cio"], "R": ["dir-infra"], "C": ["finance"], "I": ["ops"] }
+            }
+          ]
+        },
+        {
+          "id": "architecture",
+          "name": "Architecture Governance",
+          "activities": [
+            {
+              "id": "standards",
+              "name": "Publish architecture standards",
+              "description": "Maintain guardrails and patterns for solution teams",
+              "expected": { "A": ["cio"], "R": ["security"], "C": ["dir-apps"], "I": ["dir-infra"] }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "operations",
+      "name": "Operations & Reliability",
+      "capabilities": [
+        {
+          "id": "incident",
+          "name": "Incident & Problem",
+          "activities": [
+            {
+              "id": "major-incidents",
+              "name": "Run major incident command",
+              "description": "Lead triage, comms, and resolution during major events",
+              "expected": { "A": ["ops"], "R": ["dir-infra"], "C": ["security"], "I": ["cio"] }
+            },
+            {
+              "id": "postmortem",
+              "name": "Run post-incident reviews",
+              "description": "Capture learnings, owners, and actions after major events",
+              "expected": { "A": ["ops"], "R": ["dir-apps"], "C": ["security"], "I": ["finance"] }
+            }
+          ]
+        },
+        {
+          "id": "ot",
+          "name": "OT Services",
+          "activities": [
+            {
+              "id": "ot-patching",
+              "name": "Coordinate OT patching windows",
+              "description": "Align plant downtime windows across regions",
+              "expected": { "A": ["dir-infra"], "R": ["ops"], "C": ["cio"], "I": ["finance"] }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
