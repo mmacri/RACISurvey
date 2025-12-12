@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OT RACI Workshop Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --accent: #38bdf8;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.15), transparent 30%),
+        radial-gradient(circle at 80% 0%, rgba(34, 197, 94, 0.1), transparent 25%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(6px);
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      z-index: 10;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    main {
+      padding: 24px 32px 48px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .panel {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    .panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    button, input, select, textarea {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      width: 100%;
+    }
+    button {
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+      color: #0b172a;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(56, 189, 248, 0.35);
+    }
+    form {
+      display: grid;
+      gap: 10px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      color: var(--muted);
+    }
+    .status {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      color: #7dd3fc;
+      font-weight: 600;
+      margin: 8px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(56, 189, 248, 0.15);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .hero {
+      grid-column: 1/-1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+    .hero p { color: var(--muted); line-height: 1.6; }
+    code {
+      background: rgba(148, 163, 184, 0.12);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .muted { color: var(--muted); }
+    .api-config { margin-top: 12px; }
+    .api-row { display: flex; gap: 8px; }
+    .api-row input { flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="badge">Self-hosted</div>
+      <h1>OT RACI Workshop Dashboard</h1>
+      <p class="small">Use this landing page to seed data, run validations, and export results without external services.</p>
+    </div>
+    <div class="inline-actions">
+      <button type="button" id="ping-api">Ping API</button>
+      <button type="button" id="refresh-data">Refresh data</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel hero">
+      <div>
+        <h2>Workshop control center</h2>
+        <p>Load your template (organizations, domains, roles, activities) and drive workshops end-to-end from this page. All calls stay local to your deployment, keeping workshops private and GitHub-friendly.</p>
+        <p class="small">For scripted workflows, hit <code>/api/health</code> to verify readiness, then use the POST endpoints for organizations, workshops, and RACI entries. Exports are available under <code>/workshops/&lt;id&gt;/export/*</code>.</p>
+      </div>
+      <div class="panel" style="margin:0;">
+        <h3 style="margin-top:0;">Quick steps</h3>
+        <ol class="small" style="margin:0; padding-left:18px; line-height:1.6;">
+          <li>Create an organization.</li>
+          <li>Add domains, roles, and activities.</li>
+          <li>Create a workshop for the organization.</li>
+          <li>Assign R/A/C/I values per activity and role.</li>
+          <li>Run validation and generate actions/exports.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>API status</h2>
+      <div id="health" class="status">Waiting for ping...</div>
+      <div class="api-config">
+        <label for="api-base" class="small">API base URL</label>
+        <div class="api-row">
+          <input id="api-base" placeholder="https://your-api.example.com" />
+          <button type="button" id="save-api">Save</button>
+        </div>
+        <p class="small">Using: <code><span id="api-target">(not set)</span></code>. On GitHub Pages, set this to your running FastAPI backend. Value persists in <code>localStorage</code> and can be set via <code>?api=&lt;url&gt;</code>.</p>
+      </div>
+      <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, ensure the base URL includes the prefix (e.g., <code>https://example.com/raci</code>).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Template import</h2>
+      <p class="small">Upload a JSON template (matching <code>/templates/example</code>) to seed organizations, domains, roles, activities, and recommended RACI in one step.</p>
+      <div class="grid-2">
+        <div>
+          <label class="small" for="template-file">Upload template file</label>
+          <input type="file" id="template-file" accept="application/json" />
+        </div>
+        <div class="inline-actions" style="align-items:flex-end;">
+          <button type="button" id="load-sample-template">Load sample template</button>
+          <button type="button" id="import-template">Import template</button>
+        </div>
+      </div>
+      <textarea id="template-json" placeholder="Paste or drop template JSON here" style="min-height:160px; margin-top:10px;"></textarea>
+      <p class="small muted">Template fields: organization, domains[], roles[], activities[] (with domain names), recommended[]. See Seattle City Light sample for structure.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Create organization</h2>
+      <form id="form-org">
+        <input name="name" placeholder="Name (e.g., Contoso Energy)" required />
+        <input name="industry" placeholder="Industry (optional)" />
+        <textarea name="notes" placeholder="Notes"></textarea>
+        <button type="submit">Create organization</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Create workshop</h2>
+      <form id="form-workshop">
+        <div class="grid-2">
+          <input name="organization_id" placeholder="Organization ID" required />
+          <input name="name" placeholder="Workshop name" required />
+        </div>
+        <div class="grid-2">
+          <input name="date" type="date" />
+        <input name="description" placeholder="Description" />
+      </div>
+      <button type="submit">Create workshop</button>
+      </form>
+      <p class="small muted">Current workshop ID: <span id="current-workshop">not set</span></p>
+      <div class="grid-2" style="margin-top:12px;">
+        <div>
+          <label class="small" for="workshop-select">Pick existing workshop</label>
+          <select id="workshop-select"></select>
+        </div>
+        <div class="inline-actions" style="align-items:flex-end;">
+          <button type="button" id="set-workshop">Set as current</button>
+          <button type="button" id="remember-workshop">Remember</button>
+        </div>
+      </div>
+      <p class="small muted">Tip: create or choose a workshop, click <strong>Set as current</strong>, then use the export buttons below during your session.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Domains & Roles</h2>
+      <form id="form-domain">
+        <div class="grid-2">
+          <input name="name" placeholder="Domain name (e.g., Governance)" required />
+          <input name="organization_id" placeholder="Organization ID" />
+        </div>
+        <textarea name="description" placeholder="Description"></textarea>
+        <button type="submit">Add domain</button>
+      </form>
+      <hr style="border: 1px solid rgba(148,163,184,0.1);" />
+      <form id="form-role">
+        <div class="grid-2">
+          <input name="name" placeholder="Role name (e.g., CISO)" required />
+          <input name="organization_id" placeholder="Organization ID" required />
+        </div>
+        <div class="grid-2">
+          <input name="category" placeholder="Category (IT/OT/Vendor/etc.)" />
+          <input name="description" placeholder="Description" />
+        </div>
+        <button type="submit">Add role</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Activities</h2>
+      <form id="form-activity">
+        <div class="grid-2">
+          <input name="name" placeholder="Activity name" required />
+          <input name="domain_id" placeholder="Domain ID" required />
+        </div>
+        <div class="grid-2">
+          <input name="code" placeholder="Reference ID (optional)" />
+          <input name="criticality" placeholder="Criticality (High/Med/Low)" />
+        </div>
+        <textarea name="description" placeholder="Description"></textarea>
+        <textarea name="framework_refs" placeholder="Framework references"></textarea>
+        <button type="submit">Add activity</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>RACI assignments</h2>
+      <form id="form-raci">
+        <div class="grid-2">
+          <input name="workshop_id" placeholder="Workshop ID" required />
+          <input name="activity_id" placeholder="Activity ID" required />
+        </div>
+        <div class="grid-2">
+          <input name="role_id" placeholder="Role ID" required />
+          <select name="value" required>
+            <option value="">-- Value --</option>
+            <option value="R">Responsible (R)</option>
+            <option value="A">Accountable (A)</option>
+            <option value="C">Consulted (C)</option>
+            <option value="I">Informed (I)</option>
+          </select>
+        </div>
+        <button type="submit">Upsert assignment</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Validate & Actions</h2>
+      <div class="grid-2">
+        <input id="validate-workshop-id" placeholder="Workshop ID" />
+        <input id="overload-threshold" placeholder="Overload threshold" value="10" />
+      </div>
+      <div class="inline-actions" style="margin-top:10px;">
+        <button type="button" id="run-validation">Run validation</button>
+        <button type="button" id="generate-actions">Generate actions from issues</button>
+      </div>
+      <p class="small">Exports (CSV): <code>/workshops/&lt;id&gt;/export/raci</code>, <code>/workshops/&lt;id&gt;/export/gaps</code>, <code>/workshops/&lt;id&gt;/export/actions</code></p>
+      <div id="validation-results" class="small muted"></div>
+    </section>
+
+    <section class="panel" id="exports">
+      <h2>Workshop outputs</h2>
+      <p class="small">Download the live RACI matrix, gap list, and action plan for the current workshop. Works in demo mode on GitHub Pages or against your FastAPI backend.</p>
+      <div class="inline-actions" style="flex-wrap:wrap;">
+        <button type="button" data-export="raci">Download RACI CSV</button>
+        <button type="button" data-export="gaps">Download gaps CSV</button>
+        <button type="button" data-export="actions">Download actions CSV</button>
+        <button type="button" id="copy-json">Copy full dataset (JSON)</button>
+      </div>
+      <p class="small muted">Exports use the workshop ID shown above. Remember it to rehydrate the same session later.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Data overview</h2>
+      <div class="small muted">These tables read directly from the API. Set a current workshop to view issues/actions.</div>
+      <div id="tables"></div>
+    </section>
+  </main>
+
+  <script>
+    const healthEl = document.getElementById("health");
+    const apiInput = document.getElementById("api-base");
+    const apiTarget = document.getElementById("api-target");
+    const saveApiBtn = document.getElementById("save-api");
+    const currentWorkshopEl = document.getElementById("current-workshop");
+    const workshopSelect = document.getElementById("workshop-select");
+    const setWorkshopBtn = document.getElementById("set-workshop");
+    const rememberWorkshopBtn = document.getElementById("remember-workshop");
+    const tablesEl = document.getElementById("tables");
+    const validationEl = document.getElementById("validation-results");
+    const validateWorkshopInput = document.getElementById("validate-workshop-id");
+    const overloadInput = document.getElementById("overload-threshold");
+
+    const templateFileInput = document.getElementById("template-file");
+    const templateTextArea = document.getElementById("template-json");
+    const loadSampleTemplateBtn = document.getElementById("load-sample-template");
+    const importTemplateBtn = document.getElementById("import-template");
+
+    const formOrg = document.getElementById("form-org");
+    const formWorkshop = document.getElementById("form-workshop");
+    const formDomain = document.getElementById("form-domain");
+    const formRole = document.getElementById("form-role");
+    const formActivity = document.getElementById("form-activity");
+    const formRaci = document.getElementById("form-raci");
+
+    // --- Demo in-browser API so GitHub Pages can run without a live backend ---
+    const demoDb = {
+      seq: 1,
+      organizations: [],
+      workshops: [],
+      domains: [],
+      roles: [],
+      activities: [],
+      raci: [],
+      recommended: [],
+      issues: [],
+      actions: [],
+    };
+
+    const sampleTemplate = {
+      organization: { name: "Seattle City Light", industry: "Electric Utility", notes: "Demo seed tailored for CIO/OT leadership workshops" },
+      domains: [
+        { name: "Governance & Policy", description: "Strategy, policy, and oversight" },
+        { name: "Asset Management", description: "Visibility of OT assets and configurations" },
+        { name: "Access & Remote Connectivity", description: "Identity, access, and vendor connectivity" },
+        { name: "Monitoring & Incident Response", description: "Detection and response for OT" },
+        { name: "Change & Patch Management", description: "Secure change and patch practices" },
+      ],
+      roles: [
+        { name: "CIO", category: "IT" },
+        { name: "CISO", category: "Security" },
+        { name: "OT Engineering Manager", category: "OT" },
+        { name: "Plant Operations Manager", category: "Operations" },
+        { name: "Vendor Manager", category: "Vendor" },
+        { name: "Compliance Lead", category: "Compliance" },
+      ],
+      activities: [
+        { domain: "Governance & Policy", name: "Approve OT security changes", description: "Authorize major OT security control changes across plants and substations", criticality: "High", framework_refs: "IEC 62443-2-1" },
+        { domain: "Asset Management", name: "Maintain OT asset inventory", description: "Keep an authoritative, network-aware inventory of OT devices", criticality: "High", framework_refs: "NIST CSF ID.AM" },
+        { domain: "Access & Remote Connectivity", name: "Authorize vendor remote access", description: "Approve and monitor vendor access to OT environments", criticality: "High", framework_refs: "NERC CIP-005" },
+        { domain: "Change & Patch Management", name: "Maintain OT patch schedule", description: "Maintain coordinated OT patch schedules by site and vendor", criticality: "Medium", framework_refs: "IEC 62443-3-3" },
+        { domain: "Monitoring & Incident Response", name: "Lead OT incident response", description: "Coordinate OT-specific incident response with IT SOC and plant teams", criticality: "High", framework_refs: "NIST CSF RS" },
+      ],
+      recommended: [
+        { activity_name: "Approve OT security changes", role_name: "CIO", value: "A" },
+        { activity_name: "Approve OT security changes", role_name: "CISO", value: "R" },
+        { activity_name: "Approve OT security changes", role_name: "OT Engineering Manager", value: "C" },
+        { activity_name: "Maintain OT asset inventory", role_name: "OT Engineering Manager", value: "R" },
+        { activity_name: "Maintain OT asset inventory", role_name: "Plant Operations Manager", value: "C" },
+        { activity_name: "Maintain OT asset inventory", role_name: "CISO", value: "I" },
+        { activity_name: "Authorize vendor remote access", role_name: "Vendor Manager", value: "R" },
+        { activity_name: "Authorize vendor remote access", role_name: "CISO", value: "A" },
+        { activity_name: "Authorize vendor remote access", role_name: "Plant Operations Manager", value: "C" },
+        { activity_name: "Maintain OT patch schedule", role_name: "OT Engineering Manager", value: "R" },
+        { activity_name: "Maintain OT patch schedule", role_name: "Plant Operations Manager", value: "A" },
+        { activity_name: "Maintain OT patch schedule", role_name: "Vendor Manager", value: "C" },
+        { activity_name: "Lead OT incident response", role_name: "CISO", value: "A" },
+        { activity_name: "Lead OT incident response", role_name: "OT Engineering Manager", value: "R" },
+        { activity_name: "Lead OT incident response", role_name: "CIO", value: "I" },
+      ],
+    };
+
+    function seedDemo() {
+      if (demoDb.organizations.length) return;
+      const orgId = demoDb.seq++;
+      demoDb.organizations.push({ id: orgId, name: "Seattle City Light", industry: "Utilities", notes: "Demo data" });
+      const domains = ["Governance", "Asset Management", "Access Management"];
+      domains.forEach((name) => demoDb.domains.push({ id: demoDb.seq++, organization_id: orgId, name }));
+      const roles = [
+        { name: "CIO", category: "IT" },
+        { name: "OT Engineering Manager", category: "OT" },
+        { name: "Plant Ops", category: "OT" },
+        { name: "Cyber Risk", category: "Compliance" },
+      ];
+      roles.forEach((r) => demoDb.roles.push({ id: demoDb.seq++, organization_id: orgId, ...r }));
+      const activities = [
+        { name: "Approve OT security changes", domain: "Governance", criticality: "High" },
+        { name: "Maintain OT asset inventory", domain: "Asset Management", criticality: "High" },
+        { name: "Authorize vendor remote access", domain: "Access Management", criticality: "High" },
+      ];
+      activities.forEach((a) => {
+        const domain = demoDb.domains.find((d) => d.name === a.domain);
+        demoDb.activities.push({ id: demoDb.seq++, domain_id: domain.id, ...a });
+      });
+      const workshopId = demoDb.seq++;
+      demoDb.workshops.push({ id: workshopId, organization_id: orgId, name: "Seattle City Light – CIO review" });
+      // Seed a few RACI rows
+      const activityIds = demoDb.activities.map((a) => a.id);
+      const roleByName = (n) => demoDb.roles.find((r) => r.name === n)?.id;
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[0], role_id: roleByName("CIO"), value: "A" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[0], role_id: roleByName("OT Engineering Manager"), value: "R" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[1], role_id: roleByName("OT Engineering Manager"), value: "A" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[1], role_id: roleByName("Plant Ops"), value: "R" });
+      demoDb.raci.push({ id: demoDb.seq++, workshop_id: workshopId, activity_id: activityIds[2], role_id: roleByName("CIO"), value: "A" });
+      demoDb.recommended.push(
+        { id: demoDb.seq++, activity_id: activityIds[0], role_id: roleByName("CIO"), value: "A" },
+        { id: demoDb.seq++, activity_id: activityIds[0], role_id: roleByName("OT Engineering Manager"), value: "R" },
+        { id: demoDb.seq++, activity_id: activityIds[1], role_id: roleByName("OT Engineering Manager"), value: "R" },
+        { id: demoDb.seq++, activity_id: activityIds[1], role_id: roleByName("Plant Ops"), value: "C" },
+        { id: demoDb.seq++, activity_id: activityIds[2], role_id: roleByName("CIO"), value: "A" },
+      );
+    }
+
+    function handleDemoRequest(path, options) {
+      seedDemo();
+      const method = (options.method || "GET").toUpperCase();
+      const body = options.body ? JSON.parse(options.body) : {};
+      const notFound = () => { const err = new Error("404 Not Found"); err.status = 404; throw err; };
+
+      if (path === "/api/health") return { message: "Demo API ready" };
+      if (method === "GET" && path === "/templates/example") return sampleTemplate;
+
+      // Collections
+      const collections = {
+        "/organizations": "organizations",
+        "/workshops": "workshops",
+        "/domains": "domains",
+        "/roles": "roles",
+        "/activities": "activities",
+        "/workshop-raci": "raci",
+        "/recommended": "recommended",
+        "/issues": "issues",
+        "/actions": "actions",
+      };
+
+      if (collections[path] && method === "GET") return demoDb[collections[path]];
+      if (collections[path] && method === "POST") {
+        const item = { id: demoDb.seq++, ...body };
+        demoDb[collections[path]].push(item);
+        return item;
+      }
+
+      if (method === "POST" && path === "/import") {
+        const payload = body;
+        const orgId = demoDb.seq++;
+        const organization = { id: orgId, ...(payload.organization || {}) };
+        demoDb.organizations.push(organization);
+
+        const domainMap = {};
+        (payload.domains || []).forEach((d) => {
+          const record = { id: demoDb.seq++, organization_id: orgId, ...d };
+          demoDb.domains.push(record);
+          domainMap[record.name] = record;
+        });
+
+        const roleMap = {};
+        (payload.roles || []).forEach((r) => {
+          const record = { id: demoDb.seq++, organization_id: orgId, ...r };
+          demoDb.roles.push(record);
+          roleMap[record.name] = record;
+        });
+
+        const activityMap = {};
+        (payload.activities || []).forEach((a) => {
+          const domain = domainMap[a.domain];
+          if (!domain) {
+            const err = new Error(`Domain '${a.domain}' missing for activity '${a.name}'`);
+            err.status = 400;
+            throw err;
+          }
+          const record = { id: demoDb.seq++, domain_id: domain.id, ...a };
+          demoDb.activities.push(record);
+          activityMap[record.name] = record;
+        });
+
+        (payload.recommended || []).forEach((rec) => {
+          const activity = activityMap[rec.activity_name];
+          const role = roleMap[rec.role_name];
+          if (!activity || !role) {
+            const err = new Error(`Invalid recommendation reference ${rec.activity_name}/${rec.role_name}`);
+            err.status = 400;
+            throw err;
+          }
+          demoDb.recommended.push({ id: demoDb.seq++, activity_id: activity.id, role_id: role.id, value: rec.value });
+        });
+
+        return organization;
+      }
+
+      const workshopDetail = (suffix) => {
+        const match = path.match(new RegExp(`\\/workshops\\/(\\d+)\\/${suffix}$`));
+        return match ? parseInt(match[1], 10) : null;
+      };
+
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/raci")) {
+        const id = workshopDetail("raci");
+        return demoDb.raci.filter((r) => r.workshop_id === id);
+      }
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/issues")) {
+        const id = workshopDetail("issues");
+        return demoDb.issues.filter((r) => r.workshop_id === id);
+      }
+      if (method === "GET" && path.startsWith("/workshops/") && path.endsWith("/actions")) {
+        const id = workshopDetail("actions");
+        return demoDb.actions.filter((r) => r.workshop_id === id);
+      }
+
+      if (method === "POST" && path.startsWith("/workshops/") && path.endsWith("/validate")) {
+        const id = workshopDetail("validate");
+        const activities = demoDb.activities.filter((a) => a.organization_id == null || a.organization_id === (demoDb.workshops.find((w) => w.id === id)?.organization_id));
+        demoDb.issues = demoDb.issues.filter((i) => i.workshop_id !== id);
+        const issues = [];
+        activities.forEach((activity) => {
+          const rows = demoDb.raci.filter((r) => r.workshop_id === id && r.activity_id === activity.id);
+          const aCount = rows.filter((r) => r.value === "A").length;
+          const rCount = rows.filter((r) => r.value === "R").length;
+          if (aCount === 0) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "missing_A", severity: "High", notes: "No accountable role selected" });
+          if (aCount > 1) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "multiple_A", severity: "High", notes: "More than one accountable role selected" });
+          if (rCount === 0) issues.push({ id: demoDb.seq++, workshop_id: id, activity_id: activity.id, role_id: null, type: "no_R", severity: "Medium", notes: "No responsible role selected" });
+        });
+        demoDb.issues.push(...issues);
+        const roleLoad = {};
+        demoDb.raci.filter((r) => r.workshop_id === id).forEach((row) => {
+          roleLoad[row.role_id] = roleLoad[row.role_id] || {};
+          roleLoad[row.role_id][row.value || "None"] = (roleLoad[row.role_id][row.value || "None"] || 0) + 1;
+        });
+        return { created_issues: issues, stats: { roles: roleLoad, total_assignments: demoDb.raci.filter((r) => r.workshop_id === id).length } };
+      }
+
+      if (method === "POST" && path.startsWith("/workshops/") && path.endsWith("/actions/from-issues")) {
+        const id = workshopDetail("actions/from-issues");
+        const newActions = demoDb.issues
+          .filter((i) => i.workshop_id === id)
+          .map((i) => ({ id: demoDb.seq++, workshop_id: id, issue_id: i.id, summary: `Resolve ${i.type} for activity ${i.activity_id}`, status: "planned" }));
+        demoDb.actions.push(...newActions);
+        return newActions;
+      }
+
+      return notFound();
+    }
+
+    function resolveApiBase() {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("api");
+      const fromStorage = localStorage.getItem("apiBase");
+      const derived = fromQuery || fromStorage || "demo";
+      apiInput.value = derived;
+      apiTarget.textContent = derived || "(relative to page)";
+      return derived;
+    }
+
+    let apiBase = resolveApiBase();
+    let lastSnapshot = null;
+
+    const setStatus = (text, ok = true) => {
+      healthEl.textContent = text;
+      healthEl.style.background = ok ? "rgba(56, 189, 248, 0.08)" : "rgba(248,113,113,0.1)";
+      healthEl.style.borderColor = ok ? "rgba(56, 189, 248, 0.4)" : "rgba(248,113,113,0.3)";
+      healthEl.style.color = ok ? "#7dd3fc" : "#fecdd3";
+    };
+
+    saveApiBtn.addEventListener("click", () => {
+      apiBase = apiInput.value.trim();
+      localStorage.setItem("apiBase", apiBase);
+      apiTarget.textContent = apiBase || "(relative to page)";
+      ping();
+      refreshTables();
+    });
+
+    async function fetchJSON(path, options = {}) {
+      if (apiBase === "demo") {
+        return handleDemoRequest(path, options);
+      }
+      const base = apiBase.replace(/\/$/, "");
+      const url = base ? `${base}${path}` : path;
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return text; }
+    }
+
+    async function ping() {
+      try {
+        const data = await fetchJSON("/api/health");
+        setStatus(data.message || "API ready");
+      } catch (err) {
+        const shouldFallbackToDemo =
+          apiBase !== "demo" && (apiBase === "" || window.location.hostname.endsWith("github.io"));
+        if (shouldFallbackToDemo) {
+          apiBase = "demo";
+          localStorage.setItem("apiBase", apiBase);
+          apiInput.value = apiBase;
+          apiTarget.textContent = apiBase;
+          setStatus("Health check failed; switched to demo API for GitHub Pages.");
+          return ping();
+        }
+        setStatus(`Health check failed: ${err.message}`, false);
+      }
+    }
+
+    function handleForm(form, handler) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        try {
+          const result = await handler(data);
+          setStatus(`Saved: ${JSON.stringify(result)}`);
+          form.reset();
+          refreshTables();
+        } catch (err) {
+          setStatus(err.message, false);
+        }
+      });
+    }
+
+    function setTemplateContent(content) {
+      if (!templateTextArea) return;
+      templateTextArea.value = typeof content === "string" ? content : JSON.stringify(content, null, 2);
+    }
+
+    templateFileInput?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      setTemplateContent(text);
+      setStatus(`Loaded template file ${file.name}`);
+    });
+
+    loadSampleTemplateBtn?.addEventListener("click", async () => {
+      try {
+        const sample = await fetchJSON("/templates/example");
+        setTemplateContent(sample);
+        setStatus("Sample template loaded");
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    });
+
+    importTemplateBtn?.addEventListener("click", async () => {
+      try {
+        const raw = templateTextArea.value?.trim();
+        if (!raw) throw new Error("Paste or load a template first");
+        const payload = typeof raw === "string" ? JSON.parse(raw) : raw;
+        const org = await fetchJSON("/import", { method: "POST", body: JSON.stringify(payload) });
+        setStatus(`Template imported for ${org.name}`);
+        refreshTables();
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    });
+
+    function setCurrentWorkshop(id) {
+      if (!id) return;
+      currentWorkshopEl.textContent = id;
+      validateWorkshopInput.value = id;
+      localStorage.setItem("currentWorkshopId", id);
+    }
+
+    function populateWorkshopSelect(workshops) {
+      const defaultOption = `<option value="">Select a workshop</option>`;
+      const options = workshops.map((w) => `<option value="${w.id}">${w.name} (Org ${w.organization_id})</option>`).join("");
+      workshopSelect.innerHTML = defaultOption + options;
+      const stored = localStorage.getItem("currentWorkshopId");
+      if (stored) {
+        workshopSelect.value = stored;
+        setCurrentWorkshop(stored);
+      }
+    }
+
+    handleForm(formOrg, (data) => fetchJSON("/organizations", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formWorkshop, (data) => {
+      return fetchJSON("/workshops", { method: "POST", body: JSON.stringify(data) }).then((res) => {
+        setCurrentWorkshop(res.id);
+        return res;
+      });
+    });
+    handleForm(formDomain, (data) => fetchJSON("/domains", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formRole, (data) => fetchJSON("/roles", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formActivity, (data) => fetchJSON("/activities", { method: "POST", body: JSON.stringify(data) }));
+    handleForm(formRaci, (data) => fetchJSON("/workshop-raci", { method: "POST", body: JSON.stringify(data) }));
+
+    async function runValidation() {
+      const id = validateWorkshopInput.value || currentWorkshopEl.textContent;
+      if (!id || id === "not set") {
+        setStatus("Set a workshop ID first", false);
+        return;
+      }
+      try {
+        const payload = { overload_threshold: overloadInput.value || 10 };
+        const url = `/workshops/${id}/validate?` + new URLSearchParams(payload).toString();
+        const result = await fetchJSON(url, { method: "POST" });
+        validationEl.textContent = JSON.stringify(result, null, 2);
+        setStatus(`Validation ran for workshop ${id}`);
+        refreshTables();
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    async function generateActions() {
+      const id = validateWorkshopInput.value || currentWorkshopEl.textContent;
+      if (!id || id === "not set") {
+        setStatus("Set a workshop ID first", false);
+        return;
+      }
+      try {
+        await fetchJSON(`/workshops/${id}/actions/from-issues`, { method: "POST" });
+        setStatus(`Actions generated for workshop ${id}`);
+        refreshTables();
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    document.getElementById("run-validation").addEventListener("click", runValidation);
+    document.getElementById("generate-actions").addEventListener("click", generateActions);
+    document.getElementById("ping-api").addEventListener("click", ping);
+    document.getElementById("refresh-data").addEventListener("click", refreshTables);
+
+    function renderTable(title, data) {
+      if (!Array.isArray(data) || data.length === 0) return `<div class="small muted">No ${title.toLowerCase()} found.</div>`;
+      const cols = Object.keys(data[0]);
+      const head = cols.map((c) => `<th>${c}</th>`).join("");
+      const rows = data
+        .map((row) => `<tr>${cols.map((c) => `<td>${row[c] ?? ""}</td>`).join("")}</tr>`)
+        .join("");
+      return `<h4>${title}</h4><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    function computeRoleLoad(raci) {
+      const load = {};
+      raci.forEach((row) => {
+        const bucket = load[row.role_id] || { R: 0, A: 0, C: 0, I: 0, None: 0 };
+        bucket[row.value || "None"] = (bucket[row.value || "None"] || 0) + 1;
+        load[row.role_id] = bucket;
+      });
+      return load;
+    }
+
+    function renderRoleLoad(load, roles) {
+      if (!Object.keys(load).length) return "<div class=\"small muted\">No assignments yet.</div>";
+      const rows = Object.entries(load)
+        .map(([roleId, counts]) => {
+          const role = roles.find((r) => String(r.id) === String(roleId));
+          return `<tr><td>${role?.name || roleId}</td><td>${counts.A || 0}</td><td>${counts.R || 0}</td><td>${counts.C || 0}</td><td>${counts.I || 0}</td></tr>`;
+        })
+        .join("");
+      return `<table><thead><tr><th>Role</th><th>A</th><th>R</th><th>C</th><th>I</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    function renderGapSummary(issues) {
+      if (!issues.length) return "<div class=\"small muted\">No gaps detected. Run validation after assigning RACI.</div>";
+      const counts = issues.reduce((acc, i) => ({ ...acc, [i.type]: (acc[i.type] || 0) + 1 }), {});
+      const items = Object.entries(counts)
+        .map(([type, count]) => `<li>${type}: <strong>${count}</strong></li>`)
+        .join("");
+      return `<ul class=\"small\">${items}</ul>`;
+    }
+
+    function computeDomainStats(domains, activities, raci, recommended) {
+      const byId = Object.fromEntries(domains.map((d) => [d.id, d]));
+      const stats = Object.values(byId).map((d) => ({ id: d.id, name: d.name, total: 0, withA: 0, withR: 0, gapsA: 0, gapsR: 0, recommended: 0 }));
+      const statById = Object.fromEntries(stats.map((s) => [s.id, s]));
+      const recommendedByActivity = recommended.reduce((acc, rec) => {
+        acc[rec.activity_id] = (acc[rec.activity_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      activities.forEach((activity) => {
+        const bucket = statById[activity.domain_id];
+        if (!bucket) return;
+        bucket.total += 1;
+        const rows = raci.filter((r) => r.activity_id === activity.id);
+        const hasA = rows.some((r) => r.value === "A");
+        const hasR = rows.some((r) => r.value === "R");
+        bucket.recommended += recommendedByActivity[activity.id] || 0;
+        if (hasA) bucket.withA += 1; else bucket.gapsA += 1;
+        if (hasR) bucket.withR += 1; else bucket.gapsR += 1;
+      });
+
+      return stats.filter((s) => s.total > 0);
+    }
+
+    function renderDomainCards(stats) {
+      if (!stats.length) return "<div class=\"small muted\">Add domains and activities to see coverage.</div>";
+      const cards = stats
+        .map((s) => {
+          const pctA = s.total ? Math.round((s.withA / s.total) * 100) : 0;
+          const pctR = s.total ? Math.round((s.withR / s.total) * 100) : 0;
+          return `<div class=\"panel\" style=\"background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.2);\">
+              <h4 style=\"margin-top:0;\">${s.name}</h4>
+              <p class=\"small\">${s.total} activities • ${s.recommended} recommended rows</p>
+              <div class=\"small\">Accountable coverage: <strong>${pctA}%</strong> (${s.withA}/${s.total})</div>
+              <div class=\"small\">Responsible coverage: <strong>${pctR}%</strong> (${s.withR}/${s.total})</div>
+              <div class=\"small\" style=\"margin-top:6px;\">Missing A: <strong>${s.gapsA}</strong> • Missing R: <strong>${s.gapsR}</strong></div>
+            </div>`;
+        })
+        .join("");
+      return `<div class=\"grid-2\">${cards}</div>`;
+    }
+
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+          fetchJSON("/organizations"),
+          fetchJSON("/workshops"),
+          fetchJSON("/domains"),
+          fetchJSON("/roles"),
+          fetchJSON("/activities"),
+          fetchJSON("/recommended"),
+        ]);
+
+        populateWorkshopSelect(workshops);
+
+        const currentId = validateWorkshopInput.value || currentWorkshopEl.textContent;
+        let issues = [], actions = [], raci = [];
+        if (currentId && currentId !== "not set") {
+          try {
+            issues = await fetchJSON(`/workshops/${currentId}/issues`);
+            actions = await fetchJSON(`/workshops/${currentId}/actions`);
+            raci = await fetchJSON(`/workshops/${currentId}/raci`);
+          } catch (err) {
+            console.warn("Unable to load issues/actions for workshop", currentId, err);
+          }
+        }
+
+        const roleLoad = computeRoleLoad(raci);
+        const domainStats = computeDomainStats(domains, activities, raci, recommended);
+
+        lastSnapshot = { orgs, workshops, domains, roles, activities, recommended, raci, issues, actions };
+
+        tablesEl.innerHTML = [
+          `<div class="panel" style="background:rgba(255,255,255,0.02);">
+            <h3 style="margin-top:0;">Workshop snapshot</h3>
+            <p class="small">Org: <strong>${orgs.length}</strong> • Workshops: <strong>${workshops.length}</strong> • Domains: <strong>${domains.length}</strong> • Activities: <strong>${activities.length}</strong> • RACI rows: <strong>${raci.length}</strong> • Recommended: <strong>${recommended.length}</strong></p>
+            <div class="grid-2">
+              <div>
+                <h4>Role load</h4>
+                ${renderRoleLoad(roleLoad, roles)}
+              </div>
+              <div>
+                <h4>Gap summary</h4>
+                ${renderGapSummary(issues)}
+              </div>
+            </div>
+          </div>`,
+          `<div class="panel" style="background:rgba(34,197,94,0.05);border-color:rgba(34,197,94,0.2);">
+            <h3 style="margin-top:0;">Domain coverage</h3>
+            <p class="small">Track accountable/responsible completion per domain to mirror the workshop walkthrough flow.</p>
+            ${renderDomainCards(domainStats)}
+          </div>`,
+          renderTable("Organizations", orgs),
+          renderTable("Workshops", workshops),
+          renderTable("Domains", domains),
+          renderTable("Roles", roles),
+          renderTable("Activities", activities),
+          renderTable("Recommended RACI", recommended),
+          renderTable("Workshop RACI", raci),
+          renderTable("Issues", issues),
+          renderTable("Actions", actions),
+        ].join("");
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    function getCurrentWorkshopId() {
+      const fromDisplay = currentWorkshopEl.textContent;
+      if (fromDisplay && fromDisplay !== "not set") return fromDisplay;
+      if (workshopSelect.value) return workshopSelect.value;
+      return null;
+    }
+
+    setWorkshopBtn.addEventListener("click", () => {
+      if (!workshopSelect.value) {
+        setStatus("Pick a workshop from the list first", false);
+        return;
+      }
+      setCurrentWorkshop(workshopSelect.value);
+      setStatus(`Current workshop set to ${workshopSelect.value}`);
+    });
+
+    rememberWorkshopBtn.addEventListener("click", () => {
+      const id = getCurrentWorkshopId();
+      if (!id) {
+        setStatus("No workshop selected to remember", false);
+        return;
+      }
+      localStorage.setItem("currentWorkshopId", id);
+      setStatus(`Remembered workshop ${id} for next visit`);
+    });
+
+    function buildCsv(type) {
+      if (!lastSnapshot) {
+        throw new Error("Load data first with Refresh data");
+      }
+      const { roles, activities, raci, issues, actions } = lastSnapshot;
+      const workshopId = getCurrentWorkshopId();
+      if (!workshopId) throw new Error("Set a workshop ID first");
+
+      if (type === "raci") {
+        const byActivity = activities.filter((a) => raci.some((r) => String(r.workshop_id) === String(workshopId) && r.activity_id === a.id));
+        const header = ["Activity", ...roles.map((r) => r.name)];
+        const rows = byActivity.map((activity) => {
+          const row = [activity.name];
+          roles.forEach((role) => {
+            const match = raci.find((r) => String(r.workshop_id) === String(workshopId) && r.activity_id === activity.id && r.role_id === role.id);
+            row.push(match?.value || "");
+          });
+          return row;
+        });
+        return [header, ...rows].map((r) => r.join(",")).join("\n");
+      }
+
+      if (type === "gaps") {
+        const filtered = issues.filter((i) => String(i.workshop_id) === String(workshopId));
+        const header = ["Activity ID", "Role ID", "Type", "Severity", "Notes"];
+        const rows = filtered.map((i) => [i.activity_id, i.role_id || "", i.type, i.severity || "", (i.notes || "").replace(/\n/g, " ")]);
+        return [header, ...rows].map((r) => r.join(",")).join("\n");
+      }
+
+      if (type === "actions") {
+        const filtered = actions.filter((a) => String(a.workshop_id) === String(workshopId));
+        const header = ["Summary", "Owner Role", "Status", "Priority", "Due Date", "Issue ID"];
+        const rows = filtered.map((a) => [a.summary, a.owner_role_id || "", a.status, a.priority || "", a.due_date || "", a.issue_id || ""]);
+        return [header, ...rows].map((r) => r.join(",")).join("\n");
+      }
+
+      throw new Error("Unknown export type");
+    }
+
+    async function downloadExport(type) {
+      const workshopId = getCurrentWorkshopId();
+      if (!workshopId) {
+        setStatus("Set a workshop before exporting", false);
+        return;
+      }
+
+      try {
+        let csv;
+        if (apiBase === "demo") {
+          csv = buildCsv(type);
+        } else {
+          const res = await fetch(`${apiBase.replace(/\/$/, "")}/workshops/${workshopId}/export/${type}`);
+          if (!res.ok) throw new Error(`Export failed (${res.status})`);
+          csv = await res.text();
+        }
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `workshop_${workshopId}_${type}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setStatus(`Downloaded ${type.toUpperCase()} export for workshop ${workshopId}`);
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    document.querySelectorAll('#exports [data-export]').forEach((btn) => {
+      btn.addEventListener('click', () => downloadExport(btn.getAttribute('data-export')));
+    });
+
+    document.getElementById("copy-json").addEventListener("click", () => {
+      if (!lastSnapshot) {
+        setStatus("Load data first with Refresh data", false);
+        return;
+      }
+      const payload = JSON.stringify(lastSnapshot, null, 2);
+      navigator.clipboard.writeText(payload).then(() => {
+        setStatus("Copied dataset JSON to clipboard");
+      }).catch(() => setStatus("Unable to copy to clipboard", false));
+    });
+
+    // Initial load
+    ping();
+    refreshTables();
+  </script>
+</body>
+</html>
