@@ -1,125 +1,49 @@
-# RACI Workshop App scaffolding
+# OT RACI Workshop App
 
-This repository contains a FastAPI-based implementation of the OT RACI Workshop App defined in `PDI.md`. It persists data to SQLite by default (see `raci.db`) and exposes API endpoints for loading templates, running workshops, validating RACI decisions, and exporting outputs.
+A self-hosted, workshop-first tool that ingests your OT RACI Excel template, walks executives through a guided wizard to capture decisions, validates gaps live, and produces an executive-ready pack. The app is optimized for in-room facilitation—no API base URL fiddling or CRUD dashboards on the landing page.
 
-It also ships with a self-hosted landing page at `/` (`web/index.html`) that you can run from GitHub or any static host to seed data, validate workshops, and export CSVs without external services.
+## What the app is for
+- Upload the canonical Excel once and auto-build roles, domains, and activities for the workshop.
+- Run a **Workshop Wizard** that forces exactly one Accountable and at least one Responsible per activity while collecting notes and assumptions.
+- Link ownership to systems from the **APPLICATION Hi-Level** and **OT Environment Hi-Level** sheets, including primary/backup contacts.
+- Generate exports for Mujib: RACI matrix, gap register, action plan, and an executive narrative with coverage charts.
 
-## Quick start
+## Running locally
+1. Install Python 3.11+ dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Start the API (serves the static dashboard at `/`):
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+3. Open `http://localhost:8000/` to load the dashboard. The landing page should foreground **Start New Workshop**, **Continue Workshop**, **Workshop Wizard**, **Gaps & Actions**, and **Executive Pack** entries. Admin-style template and CRUD controls belong behind the **Admin** route.
 
-Install dependencies (Python 3.11+):
+Data persists to SQLite by default. Adjust `RACI_DATABASE_URL` for another SQLAlchemy-compatible backend if needed.
 
-```bash
-pip install -r requirements.txt
-```
+## Navigation (target UX)
+- **Landing Dashboard**: primary calls-to-action for starting or continuing a workshop and jumping into Wizard, Gaps, Executive Pack, or Admin.
+- **/workshops/new**: upload Excel, name the workshop, choose scope (Apps/Policy/Infra), and preview extracted counts.
+- **/workshops/:id/wizard**: domain rail, activity card, R/A/C/I selectors, parking lot, and validation heatmap.
+- **/workshops/:id/matrix**: grid edit with filters (domain, role, gaps-only) and keyboard-friendly input.
+- **/workshops/:id/inventory**: Applications and OT Environment tabs with ownership and contact capture.
+- **/workshops/:id/gaps**: severity-tagged gap register with one-click action generation.
+- **/workshops/:id/executive-pack**: coverage charts, narrative blocks, and downloads (RACI/gaps/actions CSV, printable HTML/PDF).
+- **/admin**: template mapping, role grouping, domain merge/rename, and full JSON import/export.
 
-Run the API locally (and open http://localhost:8000/ for the dashboard):
+## Excel ingestion rules (canonical mapping)
+- **Matrix sheets**: APPLICATIONS RACI, POLICY RACI, INFRASTRUCTURE RACI.
+  - Header row = first row with role names in columns B..N.
+  - Domain rows = column A text with remaining cells empty.
+  - Activity rows = column A text under the current domain; cells across role columns contain R/A/C/I values (optional during workshop).
+- **Inventory sheets**: APPLICATION Hi-Level and OT Environment Hi-Level supply system/function details, ownership, and primary/backup contacts that map to inventory entries in the app.
 
-```bash
-uvicorn app.main:app --reload
-```
+## Repository layout
+- `PDI.md` – canonical product definition and implementation scope.
+- `app/` – FastAPI backend, validation, and ingestion services.
+- `web/` and `docs/` – static dashboard assets (to be refocused on the workshop-first flow).
+- `examples/` – sample import payloads.
+- `tests/` – regression coverage for API and services.
 
-To serve the dashboard only (for GitHub Pages or a static preview), publish `web/index.html` and point it at your deployed API by setting `apiBase` in the inline script.
-
-### GitHub Pages
-
-The repo includes `docs/index.html` (a copy of the dashboard) so you can enable GitHub Pages without extra build steps:
-
-1. In GitHub, open **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions** (recommended). This repo includes `.github/workflows/pages.yml` which publishes the `docs/` folder to Pages on every push to `main`.
-   - If you prefer branch-based publishing, select **Deploy from a branch** and choose the `main` branch with the **/docs** folder. After saving, Pages will serve `docs/index.html` instead of the repository README.
-
-GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). Use the “API base URL” field on the page (or append `?api=https://your-host/api`) to point the dashboard at your backend; the value is persisted to `localStorage` so you do not have to re-enter it.
-
-If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
-
-If you want the Pages site to render even without a backend, leave the API base empty (or set it to `demo`). The dashboard will enter in-browser demo mode, seed the Seattle City Light sample workshop, and pass the health check without any network calls. If a stored API base causes a 404 on GitHub Pages, the health check now automatically falls back to demo mode so the page stays usable.
-
-### Dashboard coverage
-
-- Snapshot cards show role load, gap counts, and now domain-by-domain coverage (percent of activities with Accountable/Responsible assignments and missing-A/R totals).
-- The template workflow accepts uploaded JSON files, the bundled Seattle City Light example, or pasted payloads to seed organizations, domains, roles, activities, and recommended RACI in one click.
-- All widgets are mirrored in both `web/index.html` and `docs/index.html` so local hosting and GitHub Pages behave the same.
-- A reporting dashboard panel bundles export links, example narrative text, and a live database snapshot so facilitators can grab workshop-ready outputs without hunting through tables. The page now includes dataset selectors and roomier sections so each dashboard (API, templates, organizations, activities, RACI, validation, reporting) occupies its own space for executive-ready reviews.
-- The landing grid is capped at a readable width and cards auto-resize for executive workshop displays.
-- A reporting dashboard panel bundles export links, example narrative text, and a live database snapshot so facilitators can grab workshop-ready outputs without hunting through tables.
-- The landing grid is capped at a readable width and cards auto-resize for executive workshop displays.
-GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). If your API is not at the same origin as the page, edit `apiBase` near the bottom of `docs/index.html` to point at your backend (e.g., `https://your-host/api`).
-
-If your published URL still shows only the GitHub repository README, the Pages site has not been deployed yet. Trigger the included workflow by pushing to `main` (or run it manually via **Actions → Deploy GitHub Pages**) and wait for the green check before reloading the Pages URL.
-
-
-Run tests:
-
-```bash
-pytest
-```
-
-## Workshop workflow via the dashboard
-
-1. Open `http://localhost:8000/` (self-hosted) or `https://mmacri.github.io/RACISurvey/` (GitHub Pages copy).
-2. Set the API base (or leave as `demo` on Pages) and click **Ping API**.
-3. Import a template (upload JSON or load the Seattle City Light sample), then create or pick a workshop.
-4. Click **Set as current** to drive validation and exports from that workshop; **Remember** stores it in `localStorage` for your next visit.
-5. Capture RACI rows, run **Validate**, then download **RACI**, **Gaps**, or **Actions** CSVs from the **Workshop outputs** panel. You can also copy the full dataset as JSON for reports or spreadsheets.
-6. Use the snapshot cards for domain coverage, role load, and gap counts during the live session.
-
-## Template import
-
-- Grab the sample Seattle City Light payload via `GET /templates/example` (or download `examples/seattle_city_light_import.json`).
-- From the dashboard (self-hosted or GitHub Pages), load the sample template, paste your own JSON, or upload a file, then click **Import template** to create the organization, domains, roles, activities, and recommended RACI in one step.
-
-### Seattle City Light demo dataset
-
-To preload a workshop tailored for Seattle City Light leadership, seed the database from the curated import payload:
-
-```bash
-python -m app.seed
-```
-
-Pass `--dataset <path>` to use your own JSON payload (see `examples/seattle_city_light_import.json` for the expected shape). Start the API after seeding and load the dashboard at http://localhost:8000/ to review the prebuilt domains, roles, activities, and recommended RACI for the CIO and OT teams.
-
-
-This repository contains a lightweight, self-contained implementation of the OT RACI Workshop App defined in `PDI.md`. It uses an in-memory store and a minimal FastAPI-compatible shim so it can run without external dependencies or network access.
-
-## Quick start
-
-No installation is required beyond Python 3.11+.
-
-Run the API locally:
-
-```bash
-python -m app.main
-```
-
-(Under the shim, routes are callable via the included `TestClient`; for real deployments you can replace the shim with FastAPI/uvicorn.)
-
-Run tests:
-
-```bash
-pytest
-```
-
-## Key endpoints
-
-- `POST /organizations` – create an organization
-- `POST /workshops` – create a workshop for an organization
-- `POST /domains`, `POST /roles`, `POST /activities` – load template structures
-- `POST /recommended` – add recommended RACI assignments from your template
-- `POST /workshop-raci` – upsert workshop RACI decisions
-- `POST /workshops/{id}/validate` – check for missing/multiple A, missing R, deviations vs recommended, and role overload
-- `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
-- `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
-- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
-- `GET /workshops/{id}/export/raci`, `/workshops/{id}/export/gaps`, and `/workshops/{id}/export/actions` – CSV exports of the live workshop state
-- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
-- `GET /workshops/{id}/export/raci|gaps|actions` – CSV exports of the live workshop state
-- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload (by name; see `examples/seattle_city_light_import.json`)
-- `POST /import` – one-shot load of organization, domains, roles, activities, and recommended RACI in a single payload
-
-Data is stored in SQLite by default; override `RACI_DATABASE_URL` for PostgreSQL or other SQLAlchemy-supported backends.
-
-> Note: The `stubs/` directory provides lightweight stand-ins for `fastapi`, `pydantic`, and `sqlalchemy` so the test suite can run in offline environments. For real deployments, install the dependencies from `requirements.txt`.
-- `POST /workshops/{id}/validate` – check for missing/multiple A or missing R and create issues
-- `POST /workshops/{id}/actions/from-issues` – generate action items from open issues
-
-Data is stored in memory for easy demos; swap `app/database.py` with a persistent backend to productionize.
+## Status & next steps
+The current codebase already exposes FastAPI endpoints, SQLite persistence, and a static dashboard scaffold. The next milestone is to realign the UI to the workshop-first navigation above, implement the Excel upload flow that seeds workshops, and deliver wizard/gap/executive-pack views consistent with `PDI.md`.
