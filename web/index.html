@@ -34,6 +34,35 @@
       border-bottom: 1px solid rgba(148, 163, 184, 0.2);
       z-index: 10;
     }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+      text-align: right;
+    }
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .nav a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 8px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      transition: transform 120ms ease, box-shadow 120ms ease, color 120ms ease;
+    }
+    .nav a:hover {
+      color: #38bdf8;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(56, 189, 248, 0.25);
+    }
     h1 {
       margin: 0;
       font-size: 24px;
@@ -153,6 +182,24 @@
       <h1>OT RACI Workshop Dashboard</h1>
       <p class="small">Use this landing page to seed data, run validations, and export results without external services.</p>
     </div>
+    <div class="header-actions">
+      <nav class="nav">
+        <a href="#control-center">Overview</a>
+        <a href="#api-status">API</a>
+        <a href="#template-import">Templates</a>
+        <a href="#organizations">Organizations</a>
+        <a href="#workshops">Workshops</a>
+        <a href="#domains-roles">Domains/Roles</a>
+        <a href="#activities">Activities</a>
+        <a href="#raci-assignments">RACI</a>
+        <a href="#validate-actions">Validation</a>
+        <a href="#exports">Outputs</a>
+        <a href="#data-overview">Snapshots</a>
+      </nav>
+      <div class="inline-actions">
+        <button type="button" id="ping-api">Ping API</button>
+        <button type="button" id="refresh-data">Refresh data</button>
+      </div>
     <div class="inline-actions">
       <button type="button" id="ping-api">Ping API</button>
       <button type="button" id="refresh-data">Refresh data</button>
@@ -160,6 +207,7 @@
   </header>
 
   <main>
+    <section class="panel hero" id="control-center">
     <section class="panel hero">
       <div>
         <h2>Workshop control center</h2>
@@ -178,6 +226,7 @@
       </div>
     </section>
 
+    <section class="panel" id="api-status">
     <section class="panel">
       <h2>API status</h2>
       <div id="health" class="status">Waiting for ping...</div>
@@ -192,6 +241,7 @@
       <p class="small">This check calls <code>/api/health</code>. If you run behind a reverse proxy, ensure the base URL includes the prefix (e.g., <code>https://example.com/raci</code>).</p>
     </section>
 
+    <section class="panel" id="template-import">
     <section class="panel">
       <h2>Template import</h2>
       <p class="small">Upload a JSON template (matching <code>/templates/example</code>) to seed organizations, domains, roles, activities, and recommended RACI in one step.</p>
@@ -209,6 +259,7 @@
       <p class="small muted">Template fields: organization, domains[], roles[], activities[] (with domain names), recommended[]. See Seattle City Light sample for structure.</p>
     </section>
 
+    <section class="panel" id="organizations">
     <section class="panel">
       <h2>Create organization</h2>
       <form id="form-org">
@@ -219,6 +270,7 @@
       </form>
     </section>
 
+    <section class="panel" id="workshops">
     <section class="panel">
       <h2>Create workshop</h2>
       <form id="form-workshop">
@@ -244,6 +296,9 @@
         </div>
       </div>
       <p class="small muted">Tip: create or choose a workshop, click <strong>Set as current</strong>, then use the export buttons below during your session.</p>
+    </section>
+
+    <section class="panel" id="domains-roles">
           <input name="description" placeholder="Description" />
         </div>
         <button type="submit">Create workshop</button>
@@ -275,6 +330,7 @@
       </form>
     </section>
 
+    <section class="panel" id="activities">
     <section class="panel">
       <h2>Activities</h2>
       <form id="form-activity">
@@ -292,6 +348,7 @@
       </form>
     </section>
 
+    <section class="panel" id="raci-assignments">
     <section class="panel">
       <h2>RACI assignments</h2>
       <form id="form-raci">
@@ -313,6 +370,7 @@
       </form>
     </section>
 
+    <section class="panel" id="validate-actions">
     <section class="panel">
       <h2>Validate & Actions</h2>
       <div class="grid-2">
@@ -339,6 +397,7 @@
       <p class="small muted">Exports use the workshop ID shown above. Remember it to rehydrate the same session later.</p>
     </section>
 
+    <section class="panel" id="data-overview">
     <section class="panel">
       <h2>Data overview</h2>
       <div class="small muted">These tables read directly from the API. Set a current workshop to view issues/actions.</div>
