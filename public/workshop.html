@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guided RACI Workshop</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body data-page="workshop">
+    <header>
+      <a class="logo" href="index.html">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/svg/1f527.svg" alt="Logo" />
+        <div>
+          <div class="badge">Guided wizard</div>
+          <h1>RACI Workshop Wizard</h1>
+          <small>For facilitation—not a survey.</small>
+        </div>
+      </a>
+      <nav>
+        <a href="index.html">Dashboard</a>
+        <a class="active" href="workshop.html">Workshop</a>
+        <a href="review.html">Review</a>
+        <a href="export.html">Export</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel hero">
+        <div>
+          <div class="badge">Context first</div>
+          <h2>Rules for the room</h2>
+          <ul>
+            <li>One and only one Accountable per activity.</li>
+            <li>Multiple Responsible roles allowed. Execution must be clear.</li>
+            <li>Consulted / Informed do not own outcomes.</li>
+            <li>Disagreement is expected. Capture it rather than skipping.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Current workshop</h4>
+          <select data-workshop-select></select>
+          <div data-wizard-progress class="flex" style="margin-top: 12px"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="wizard-controls">
+          <div>
+            <div class="badge">Activity</div>
+            <h3 data-activity-title></h3>
+            <small data-activity-domain></small>
+          </div>
+          <div class="flex">
+            <button data-prev type="button" class="secondary">Previous</button>
+            <span class="chip" data-activity-position></span>
+            <button data-next type="button" class="primary">Next</button>
+          </div>
+        </div>
+
+        <div class="grid-two" style="margin-top: 16px">
+          <div>
+            <div class="raci-grid">
+              <label>Accountable (one)<select data-raci="A"></select></label>
+              <label>Responsible<select multiple size="5" data-raci="R"></select></label>
+              <label>Consulted<select multiple size="5" data-raci="C"></select></label>
+              <label>Informed<select multiple size="5" data-raci="I"></select></label>
+            </div>
+            <div class="grid-two" style="margin-top: 12px">
+              <label>Confidence
+                <select data-confidence>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </label>
+              <label>Comment
+                <textarea rows="3" data-comment placeholder="Notes, assumptions, or dissent"></textarea>
+              </label>
+            </div>
+            <div class="wizard-controls">
+              <div data-warnings></div>
+              <div class="flex">
+                <input data-jump type="number" min="1" style="max-width: 120px" placeholder="Jump to #" />
+                <button data-run-analysis type="button" class="secondary">Detect gaps</button>
+              </div>
+            </div>
+            <div data-gap-results style="margin-top: 10px"></div>
+          </div>
+          <div class="panel guidance">
+            <h4>Guidance</h4>
+            <div data-activity-guidance></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="assets/wizard.js"></script>
+  </body>
+</html>

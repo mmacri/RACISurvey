@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RACI Workshop Intelligence Platform</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body data-page="dashboard">
+    <header>
+      <a class="logo" href="index.html">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/svg/2705.svg" alt="Logo" />
+        <div>
+          <div class="badge">Self-hosted</div>
+          <h1>RACI Workshop Intelligence Platform</h1>
+          <small>Excel-derived, workshop-ready, executive-out.</small>
+        </div>
+      </a>
+      <nav>
+        <a class="active" href="index.html">Dashboard</a>
+        <a href="workshop.html">Workshop</a>
+        <a href="review.html">Review</a>
+        <a href="export.html">Export</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="panel hero">
+        <div>
+          <div class="badge">Control tower</div>
+          <h2>Excel-in → Workshop-out</h2>
+          <p>
+            Load the canonical Excel schema, define scope, guide leaders through RACI assignments, and leave the room with
+            executive-ready outputs. This dashboard is for facilitation, not documentation.
+          </p>
+          <div class="flex">
+            <a class="tag" href="#create">Create new workshop</a>
+            <a class="tag secondary" href="workshop.html">Resume workshop</a>
+            <a class="tag secondary" href="export.html">Generate executive pack</a>
+          </div>
+        </div>
+        <div class="panel" data-progress-summary>
+          <h4>Progress snapshot</h4>
+          <p class="muted">No workshops loaded yet.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="create">
+        <h3>Workshop management</h3>
+        <div class="grid-two">
+          <div>
+            <h4>New workshop</h4>
+            <p class="muted">Name it, set the objective, and pick the domains/capabilities you will cover.</p>
+            <form id="create-workshop-form">
+              <label>Workshop name <input required name="name" type="text" placeholder="OT RACI Alignment – FY25" /></label>
+              <label>Goal / statement of intent <input required name="goal" type="text" placeholder="Agree Accountables for OT services" /></label>
+              <fieldset>
+                <legend>Scope (from Excel)</legend>
+                <div data-domain-options class="flex"></div>
+              </fieldset>
+              <button class="primary" type="submit">Create workshop</button>
+            </form>
+          </div>
+          <div>
+            <h4>Existing workshops</h4>
+            <div data-workshop-table>
+              <p class="muted">No saved sessions yet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Scope selection</h3>
+        <p class="muted">Everything mirrors the Excel template. Domains, capabilities, activities, and roles come directly from the source file.</p>
+        <div data-scope-summary></div>
+      </section>
+
+      <section class="panel">
+        <h3>Outputs</h3>
+        <div class="cards">
+          <div class="panel">
+            <h4>Executive pack</h4>
+            <p>Top findings, risks, and misalignments ready for Mujib. PPT/PDF.</p>
+            <a class="tag" href="export.html">Go to Export</a>
+          </div>
+          <div class="panel">
+            <h4>RACI matrix</h4>
+            <p>Normalized rows per activity with confidence signals. Excel.</p>
+            <a class="tag" href="export.html#matrix">Generate matrix</a>
+          </div>
+          <div class="panel">
+            <h4>Gap heatmap</h4>
+            <p>Ambiguity vs. conflict by domain and role, refreshed in real time.</p>
+            <a class="tag" href="review.html">View review</a>
+          </div>
+          <div class="panel">
+            <h4>Action register</h4>
+            <p>Owners, due dates, and follow-ups for every flagged item.</p>
+            <a class="tag" href="review.html#actions">Manage actions</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="assets/wizard.js"></script>
+  </body>
+</html>
