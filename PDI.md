@@ -1,230 +1,95 @@
-# OT RACI Workshop App – PDI
+# OT RACI Workshop App – Product Definition & Implementation (PDI)
 
-## 1. Product Summary
+## 1. Purpose
+A self-hosted OT RACI Workshop app that ingests the canonical Excel template, guides executives through RACI decisions via a wizard, validates governance gaps live, and outputs an executive-ready pack. The experience must feel like a workshop instrument—not an admin console.
 
-The OT RACI Workshop App is a self-hosted web application that transforms a structured OT RACI Excel template into an interactive, workshop-ready tool for CIOs, CISOs, OT leadership, and plant operations. It guides stakeholders through clarifying who is Responsible, Accountable, Consulted, and Informed for key OT cyber and operational activities, automatically detecting gaps and misalignments and generating action-ready outputs.
+## 2. Success criteria
+- Uploading `DRAFT_OT_RACI_TEMPLATE_v.1 copy.xlsx` creates a workshop with roles, domains, and activities extracted from the APPLICATIONS RACI, POLICY RACI, and INFRASTRUCTURE RACI sheets.
+- Wizard enforces exactly one Accountable and at least one Responsible per activity (or an explicit “accept gap” with a note).
+- Reporting produces:
+  - RACI matrix export (CSV + printable HTML/PDF).
+  - Gap register (CSV + on-screen) with severity.
+  - Action plan (CSV + on-screen) derived from gaps.
+  - Executive narrative (editable HTML blocks + export).
+- App runs fully self-hosted (local FastAPI + SQLite + static frontend) with no external services required.
 
-## 2. Problem Statement
+## 3. Target users
+- **CIO / CISO / OT leadership** – need a decision-first wizard and executive outputs.
+- **OT engineering / plant ops** – participate in decisions and supply contacts for systems.
+- **Risk / compliance / GRC** – rely on gap register and action plan.
+- **Facilitator** – configures the workshop from Excel and drives the wizard.
 
-Organizations operating OT environments struggle with:
+## 4. Workshop flow & required behavior
+- **Phase 0 — Pre-work (setup)**: Upload Excel, choose matrix sheets (Apps/Policy/Infra), pick scope (domains), auto-build roles/domains/activities, optionally leave assignments blank. Output: agenda, scope confirmation, workshop link/QR.
+- **Phase 1 — Kickoff (charter)**: Display RACI definitions and rules, show today’s scope counts, capture attendees and any missing roles.
+- **Phase 2 — Guided decisioning (wizard)**:
+  - For each domain/section: pick one Accountable, then Responsible(s), then Consulted/Informed.
+  - Force A selection before moving on; allow parking lot items and decision notes/assumptions.
+  - Provide progress bar, parking lot list, and validation heatmap per domain.
+- **Phase 3 — Inventory linkage**: From APPLICATION Hi-Level and OT Environment Hi-Level sheets, capture primary/backup contacts and link system functions to R/A/C/I roles; flag missing contacts.
+- **Phase 4 — Executive pack**: One-click generation of decision summary, matrices, gap register, action plan, and narrative recommendations.
 
-- Ambiguous ownership for OT cyber and operational controls.
-- Overlap and conflict between IT, OT, vendors, and compliance teams.
-- Difficulty translating frameworks and policies into clear decision rights.
-- Workshops that generate slides but not structured, reusable data.
+## 5. Product capabilities (must-haves)
+- **Start New Workshop**: Upload Excel, name workshop, choose scope, preview extracted counts.
+- **Continue Workshop**: Resume in-progress sessions.
+- **Wizard Mode**: Domain rail + activity view with R/A/C/I selectors, validations, coaching recommendations, and parking lot.
+- **Matrix View**: Grid editing with filters (domain, role, gaps-only) and keyboard navigation.
+- **Inventory**: Applications + OT environment tabs with ownership and contact capture.
+- **Gaps & Actions**: Severity-tagged gap register, one-click action generation.
+- **Executive Pack**: Coverage charts, top gaps/actions, narrative blocks, and downloads (CSV/PDF/HTML).
+- **Admin**: Template mapping settings, role grouping, domain renaming/merge, JSON import/export.
 
-We need a tool that turns an OT RACI template into a guided workshop experience and persistent governance artifact.
+## 6. Architecture
+- **Backend**: FastAPI (Python) with SQLite persistence; Excel ingestion via `openpyxl` with a fallback ZIP/XML parser; reporting/validation services for gaps and actions.
+- **Frontend**: React + Vite (or minimal HTML/JS) with routes for landing dashboard, new workshop, overview, wizard, matrix, inventory, gaps, executive pack, and admin.
+- **Hosting**: Local uvicorn for the API; static build served by FastAPI or another simple HTTP server. Entire experience self-hosted without external services.
 
-## 3. Primary Users & Personas
+## 7. Data model (SQLite)
+- `workshops`: id, name, org_name, created_at, source_excel_hash, scope_json
+- `roles`: id, workshop_id, sheet_name, role_name, role_group
+- `domains`: id, workshop_id, sheet_name, domain_name, order_index
+- `activities`: id, workshop_id, sheet_name, domain_id, activity_text, order_index
+- `assignments`: id, workshop_id, activity_id, role_id, raci_value (R/A/C/I), note
+- `decisions`: id, workshop_id, activity_id, decision_note, assumptions, unresolved_flag
+- `inventory_items`: id, workshop_id, sheet_name (APPLICATION Hi-Level / OT Environment Hi-Level), name/function, type, description, responsible_role, accountable_role, consulted_roles, informed_roles, primary_contact, backup_contact
 
-1. **CIO / CISO / OT Executive**
-   - Needs: Clear accountability, confidence that OT risk is owned and managed.
-   - Uses app during workshops to agree on RACI, then review gap & action reports.
+## 8. Excel ingestion rules
+- **Matrix sheets**: APPLICATIONS RACI, POLICY RACI, INFRASTRUCTURE RACI.
+  - Header row: first row with role names in columns B..N; roles are non-empty header cells.
+  - Domain/section row: text in column A with remaining cells empty → create domain heading.
+  - Activity row: text in column A under current domain → create activity; cells across role columns hold R/A/C/I values (may be blank during workshop).
+- **Inventory sheets**: APPLICATION Hi-Level and OT Environment Hi-Level include fields for name/function, type, description, R/A/C/I roles, and primary/backup contacts. These must map to `inventory_items` and be editable.
 
-2. **OT Engineering / Plant Ops Leader**
-   - Needs: Clarity on what their team is responsible for vs IT and vendors.
-   - Uses app to negotiate realistic responsibilities and identify overload.
+## 9. Navigation & pages
+- **Landing Dashboard**: cards for Start New Workshop, Continue Workshop, Workshop Wizard, Gaps & Actions, Executive Pack (Mujib), Admin.
+- **/workshops/new**: Excel upload, workshop naming, scope selection, preview counts.
+- **/workshops/:id/overview**: progress by sheet/domain, unresolved decisions, top gaps.
+- **/workshops/:id/wizard**: domain rail, activity card with R/A/C/I selectors, validation, notes, parking lot, coaching prompts.
+- **/workshops/:id/matrix**: grid edit view with filters and gaps-only mode.
+- **/workshops/:id/inventory**: Applications and OT Environment tabs for ownership/contact capture with missing-contact flags.
+- **/workshops/:id/gaps**: gap register with severity, parking-lot items, and action generation.
+- **/workshops/:id/executive-pack**: coverage charts, narrative blocks, downloads (RACI/gaps/actions CSV, printable HTML/PDF).
+- **/admin**: template mapping, role grouping, domain merge/rename, full backup import/export.
 
-3. **Risk / Compliance / GRC Leader**
-   - Needs: Mapped accountability to controls, frameworks, and policies.
-   - Uses app output to feed into IRM/ServiceNow and assurance planning.
+## 10. API surface (FastAPI)
+- `POST /api/workshops/from-excel`
+- `GET /api/workshops`
+- `GET /api/workshops/{id}`
+- `GET /api/workshops/{id}/domains`
+- `GET /api/workshops/{id}/roles`
+- `GET /api/workshops/{id}/activities?domain_id=...`
+- `PUT /api/workshops/{id}/assignments` (bulk upsert from wizard/matrix)
+- `POST /api/workshops/{id}/validate`
+- `POST /api/workshops/{id}/actions/generate`
+- `GET /api/workshops/{id}/export/raci.csv`
+- `GET /api/workshops/{id}/export/gaps.csv`
+- `GET /api/workshops/{id}/export/actions.csv`
+- `GET /api/workshops/{id}/executive-pack` (structured JSON + HTML blocks)
 
-4. **Consultant / Facilitator (you)**
-   - Needs: Repeatable, structured workshop method with strong visuals and exports.
-   - Uses app end-to-end for preparation, facilitation, and follow-up.
+## 11. Coaching & recommendations
+Wizard should propose likely Consulted/Informed roles (e.g., Compliance/Security for Policy activities) and flag governance anti-patterns (missing Consulted on security items, excessive Consulted counts). Recommendations inform, but do not override, facilitator choices.
 
-## 4. Goals and Non-Goals
-
-### Goals
-
-- Ingest the OT RACI Excel template and map roles, activities, and recommended RACI.
-- Support live workshops to capture and finalize RACI decisions per activity and role.
-- Validate RACI structure (exactly one A, at least one R).
-- Highlight gaps and conflicts, including deviations from recommended RACI.
-- Generate exportable artifacts: RACI matrix, gap reports, and action plans.
-- Run fully self-hosted (e.g., in a Docker container) with no dependency on external SaaS.
-
-### Non-Goals
-
-- Real-time multi-tenant SaaS platform (initially this is single-tenant/self-hosted).
-- Full HR/role lifecycle management.
-- Direct integration with ServiceNow in v1 (export files will support integration in later phases).
-
-## 5. Success Metrics
-
-- Workshop completion rate: ≥ 80% of in-scope activities have fully valid RACI by session end.
-- Gap detection: 100% of activities with missing or conflicting RACI flagged.
-- Executive satisfaction: ≥ 4/5 rating on “clarity of accountability” in post-workshop feedback.
-- Adoption: App reused for at least 2+ follow-up workshops per customer.
-
-## 6. Key Features
-
-1. **RACI Template Import**
-   - Upload Excel file.
-   - Map sheets and columns to app fields.
-   - Persist activities, domains, roles, and optional recommended RACI.
-
-2. **Engagement/Workshop Setup**
-   - Create named workshops linked to a specific customer/org.
-   - Select which domains and activities are in scope.
-   - Assign workshop participants to roles.
-
-3. **Perception Check Mode**
-   - Rapid capture of “who is accountable today?” for key activities.
-   - Optional comparison against recommended RACI.
-
-4. **Domain-based RACI Editor**
-   - Tabbed or filterable view by domain.
-   - Activity rows with RACI assignment controls.
-   - Recommended vs. Workshop RACI comparison.
-   - Validation rules (exactly one A, at least one R).
-
-5. **Gap & Conflict Analytics**
-   - Automatic detection of:
-     - Missing A / multiple A.
-     - No R.
-     - Role overload (configurable thresholds).
-     - Deviation from recommended RACI.
-
-6. **Role Load and Summary Views**
-   - Per-role breakdown of R/A/C/I counts.
-   - Visual indicators of overload and misalignment.
-
-7. **Action Plan Builder**
-   - Convert flagged issues into structured actions with owners and due dates.
-   - Allow adding custom actions.
-
-8. **Export & Reporting**
-   - Export full RACI matrix (CSV, Excel).
-   - Export gap list and action plan.
-   - Generate PDF summary pack.
-
-9. **Self-hosting & Security**
-   - Containerized deployment (Docker).
-   - Local database (e.g., SQLite/PostgreSQL).
-   - Basic authentication for workshop participants.
-   - Data stored on customer-controlled infrastructure.
-
-## 7. Data Model (Logical)
-
-### Core Entities
-
-- **Organization**
-  - id
-  - name
-  - industry
-  - notes
-
-- **Workshop**
-  - id
-  - organization_id (FK)
-  - name
-  - date
-  - description
-  - status (planned / in-progress / completed)
-
-- **Domain**
-  - id
-  - organization_id (FK) or global
-  - name
-  - description
-
-- **Role**
-  - id
-  - organization_id (FK)
-  - name (e.g., CIO, CISO, OT Engineering Manager)
-  - category (IT, OT, Vendor, Compliance, Other)
-  - description
-
-- **Activity**
-  - id
-  - domain_id (FK)
-  - code / reference_id (from template)
-  - name
-  - description
-  - criticality (e.g., High/Medium/Low)
-  - framework_refs (e.g., NIST CSF, IEC 62443, CIP mappings)
-
-- **RecommendedRACI**
-  - id
-  - activity_id (FK)
-  - role_id (FK)
-  - value (R/A/C/I or None)
-
-- **WorkshopRACI**
-  - id
-  - workshop_id (FK)
-  - activity_id (FK)
-  - role_id (FK)
-  - value (R/A/C/I or None)
-
-- **Issue (Gap/Conflict)**
-  - id
-  - workshop_id (FK)
-  - activity_id (FK)
-  - role_id (FK, nullable)
-  - type (missing_A, multiple_A, no_R, deviation_from_recommended, role_overload)
-  - severity (High/Medium/Low)
-  - notes
-
-- **ActionItem**
-  - id
-  - workshop_id (FK)
-  - issue_id (FK, nullable)
-  - summary
-  - owner_role_id (FK)
-  - owner_name (optional)
-  - due_date
-  - status (planned, in-progress, completed)
-  - priority
-
-## 8. User Flows (High-Level)
-
-1. **Facilitator – Setup Flow**
-   1. Log in.
-   2. Create Organization (if new).
-   3. Create Workshop.
-   4. Upload RACI Template and map columns.
-   5. Confirm imported domains, roles, and activities.
-   6. Select scope (domains/activities) for this workshop.
-
-2. **Workshop – Perception Check Flow**
-   1. Open Workshop Overview page on big screen.
-   2. Start Perception Check mode.
-   3. For each key activity, select current accountable role.
-   4. Optionally reveal recommended vs current.
-   5. Save perception snapshot.
-
-3. **Workshop – RACI Editing Flow**
-   1. Choose domain and view activity list.
-   2. For each activity:
-      - Review description and context.
-      - Assign A, then R, C, I.
-   3. Resolve validation errors per activity.
-   4. Mark domain as complete.
-
-4. **Workshop – Gap & Action Flow**
-   1. Go to Gap Report.
-   2. Filter by gap type.
-   3. For each issue, decide:
-      - Change RACI immediately.
-      - Or log an action.
-   4. Build / refine action plan.
-   5. Export outputs.
-
-## 9. Risks & Mitigations
-
-- **Risk:** Excel templates differ slightly between customers.
-  - **Mitigation:** Flexible column mapping UI; clearly documented requirements.
-
-- **Risk:** Workshop runs out of time before all activities are covered.
-  - **Mitigation:** Allow partial completion; domain prioritization; quick “minimal viable RACI” mode for key activities.
-
-- **Risk:** Overly complex UI for executives.
-  - **Mitigation:** Clean, domain-based navigation; facilitator-centric controls; hide advanced options during workshop.
-
-## 10. Roadmap (Future)
-
-- Integrate with ServiceNow GRC/IRM via API (create roles, controls, ownership).
-- Add per-person rather than per-role accountability (for operationalization).
-- Add versioning and comparison between workshop iterations.
+## 12. Non-goals
+- Multi-tenant SaaS or third-party integrations in v1.
+- Person-level HR system; focus remains on roles.
+- Real-time collaboration beyond single-facilitator workshop mode.
