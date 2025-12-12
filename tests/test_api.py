@@ -1,146 +1,101 @@
 import os
-import tempfile
+import base64
 import sys
+import tempfile
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "stubs"))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ["RACI_DATABASE_URL"] = "sqlite:///./test_raci.db"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from openpyxl import Workbook
 
-from app.database import get_db, init_db, SessionLocal  # noqa: E402
-from app.main import app  # noqa: E402
+# configure test database before importing app
+os.environ["RACI_DATABASE_URL"] = "sqlite://"
+
+from backend.main import app  # noqa: E402
+from backend.db.database import Base, engine  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def setup_db():
-    # reset database file each test
-    if os.path.exists("./test_raci.db"):
-        os.remove("./test_raci.db")
-    init_db()
-
-    def override_get_db():
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
+def reset_db():
+    # ensure clean database
+    assert "sqlite://" in str(engine.url)
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     yield
-    app.dependency_overrides.clear()
-    if os.path.exists("./test_raci.db"):
-        os.remove("./test_raci.db")
 
 
-def test_workshop_validation_and_actions():
+def build_sample_workbook(tmp_path: Path) -> Path:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "APPLICATIONS RACI"
+    ws["A1"] = "Activity"
+    ws["B1"] = "CIO"
+    ws["C1"] = "CISO"
+    ws["A2"] = "Select OT vendor"
+    ws["A3"] = "Deploy patch"
+    ws["B2"] = "R"
+    ws["C2"] = "A"
+    ws["B3"] = "R"
+    ws["C3"] = "I"
+
+    inst = wb.create_sheet("Instructions")
+    inst["A1"] = "Rules of engagement"
+
+    path = tmp_path / "template.xlsx"
+    wb.save(path)
+    return path
+
+
+def test_workflow_from_upload_to_export(tmp_path):
+    workbook_path = build_sample_workbook(tmp_path)
     client = TestClient(app)
-    org = client.post("/organizations", json={"name": "Contoso"}).json()
-    domain = client.post(
-        "/domains", json={"name": "Governance", "organization_id": org["id"]}
-    ).json()
-    role_cio = client.post(
-        "/roles", json={"name": "CIO", "organization_id": org["id"], "category": "IT"}
-    ).json()
-    role_ciso = client.post(
-        "/roles", json={"name": "CISO", "organization_id": org["id"], "category": "Security"}
-    ).json()
-    activity = client.post(
-        "/activities",
-        json={"name": "Approve OT security changes", "domain_id": domain["id"], "criticality": "High"},
-    ).json()
+
+    with open(workbook_path, "rb") as fh:
+        content_b64 = base64.b64encode(fh.read()).decode()
+    response = client.post(
+        "/api/templates/upload",
+        json={"file_name": workbook_path.name, "content": content_b64},
+    )
+    assert response.status_code == 200
+    template_id = response.json()["template"]["id"]
+    assert response.json()["domains"]
+    assert response.json()["roles"]
+
     workshop = client.post(
-        "/workshops", json={"organization_id": org["id"], "name": "Kickoff"}
+        "/api/workshops",
+        json={"template_id": template_id, "org_name": "Contoso", "workshop_name": "OT RACI – Current State"},
     ).json()
 
-    # Baseline recommendation says CISO is A
-    client.post(
-        "/recommended",
-        json=[
-            {"activity_id": activity["id"], "role_id": role_ciso["id"], "value": "A"},
-            {"activity_id": activity["id"], "role_id": role_cio["id"], "value": "R"},
-        ],
-    )
+    domains = client.get(f"/api/workshops/{workshop['id']}/domains").json()
+    roles = client.get(f"/api/workshops/{workshop['id']}/domains/{domains[0]['id']}/roles").json()
+    activities = client.get(f"/api/workshops/{workshop['id']}/domains/{domains[0]['id']}/activities").json()
+    assert len(activities) == 2
 
-    # Workshop assigns CIO as Accountable only
-    client.post(
-        "/workshop-raci",
-        json={
-            "workshop_id": workshop["id"],
-            "activity_id": activity["id"],
-            "role_id": role_cio["id"],
-            "value": "A",
-        },
-    )
-
-    validation = client.post(f"/workshops/{workshop['id']}/validate", params={"overload_threshold": 1}).json()
-    issue_types = {i["type"] for i in validation["created_issues"]}
-    assert {"no_R", "missing_A", "deviation_from_recommended", "role_overload"}.intersection(issue_types)
-
-    actions = client.post(f"/workshops/{workshop['id']}/actions/from-issues").json()
-    assert actions, "Expected actions generated from issues"
-    assert actions[0]["summary"].startswith("Resolve")
-
-    raci_csv = client.get(f"/workshops/{workshop['id']}/export/raci").text
-    assert "Activity" in raci_csv and "CIO" in raci_csv
-
-
-def test_import_template_creates_entities():
-    client = TestClient(app)
+    # send incomplete assignments to trigger issues
     payload = {
-        "organization": {"name": "Seattle City Light", "industry": "Utility"},
-        "domains": [{"name": "Governance"}],
-        "roles": [{"name": "CIO"}, {"name": "OT Engineering Manager"}],
-        "activities": [
-            {
-                "domain": "Governance",
-                "name": "Approve OT patching",
-                "criticality": "High",
-                "framework_refs": "NIST CSF PR",
-            }
-        ],
-        "recommended": [
-            {"activity_name": "Approve OT patching", "role_name": "CIO", "value": "A"}
+        "domain_id": domains[0]["id"],
+        "assignments": [
+            {"activity_id": activities[0]["id"], "role_id": roles[0]["id"], "raci_value": "R"},
         ],
     }
+    client.put(f"/api/workshops/{workshop['id']}/assignments/bulk", json=payload)
+    validation = client.post(f"/api/workshops/{workshop['id']}/validate").json()
+    assert validation["created"]
 
-    org = client.post("/import", json=payload).json()
-    domains = client.get("/domains", params={"organization_id": org["id"]}).json()
-    roles = client.get("/roles", params={"organization_id": org["id"]}).json()
-    activities = client.get("/activities").json()
+    # resolve with an Accountable and Inform
+    payload["assignments"].append({"activity_id": activities[0]["id"], "role_id": roles[1]["id"], "raci_value": "A"})
+    payload["assignments"].append({"activity_id": activities[0]["id"], "role_id": roles[1]["id"], "raci_value": "I"})
+    client.put(f"/api/workshops/{workshop['id']}/assignments/bulk", json=payload)
+    progress = client.get(f"/api/workshops/{workshop['id']}/progress").json()
+    assert progress["complete"] >= 1
 
-    assert len(domains) == 1
-    assert any(r["name"] == "CIO" for r in roles)
-    assert activities[0]["domain_id"] == domains[0]["id"]
+    excel = client.post(f"/api/workshops/{workshop['id']}/export/excel")
+    assert excel.status_code == 200
 
-    workshop = client.post("/workshops", json={"organization_id": org["id"], "name": "SCL Session"}).json()
-    client.post(
-        "/workshop-raci",
-        json={
-            "workshop_id": workshop["id"],
-            "activity_id": activities[0]["id"],
-            "role_id": roles[0]["id"],
-            "value": "R",
-        },
-    )
-    validation = client.post(f"/workshops/{workshop['id']}/validate").json()
-    assert any(issue["type"] == "deviation_from_recommended" for issue in validation["created_issues"])
+    pdf = client.post(f"/api/workshops/{workshop['id']}/export/pdf")
+    assert pdf.status_code == 200
 
-
-def test_example_template_endpoint_and_recommended_listing():
-    client = TestClient(app)
-    sample = client.get("/templates/example").json()
-    assert sample["organization"]["name"] == "Seattle City Light"
-
-    org = client.post("/import", json=sample).json()
-    assert org["name"] == "Seattle City Light"
-
-    recommended = client.get("/recommended").json()
-    activities = client.get("/activities").json()
-    activity_lookup = {a["name"]: a["id"] for a in activities}
-
-    assert recommended, "Expected recommended RACI returned"
-    assert any(r["activity_id"] == activity_lookup.get("Approve OT security changes") for r in recommended)
+    pptx = client.post(f"/api/workshops/{workshop['id']}/export/pptx")
+    assert pptx.status_code == 200

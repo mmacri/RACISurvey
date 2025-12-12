@@ -4,3 +4,6 @@ SQLAlchemy==2.0.29
 pydantic==1.10.14
 pytest==8.1.1
 httpx==0.27.0
+openpyxl==3.1.2
+python-pptx==0.6.23
+weasyprint==61.2

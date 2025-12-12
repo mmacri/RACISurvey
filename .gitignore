@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 raci.db
 test_raci.db
+data/
+/tmp/
+*.db
