@@ -1,4 +1,5 @@
 from datetime import datetime
+import csv
 from pathlib import Path
 from typing import Dict
 
@@ -60,10 +61,18 @@ def export_actions_csv(db: Session, workshop_id: int) -> Path:
     path = EXPORT_DIR / f"workshop_{workshop_id}_actions.csv"
     import csv
 
-    actions = db.query(models.Issue).filter(models.Issue.workshop_id == workshop_id).all()
+    actions = db.query(models.Action).filter(models.Action.workshop_id == workshop_id).all()
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["Issue", "Severity", "Status", "Activity"])
-        for issue in actions:
-            writer.writerow([issue.issue_type, issue.severity, issue.status, issue.activity_id])
+        writer.writerow(["Description", "Owner", "Due Date", "Status", "Linked Issue"])
+        for action in actions:
+            writer.writerow(
+                [
+                    action.description,
+                    action.owner_name or (action.owner_role.role_name if action.owner_role else ""),
+                    action.due_date or "",
+                    action.status,
+                    action.linked_issue_id or "",
+                ]
+            )
     return path

@@ -46,6 +46,8 @@ def validate_workshop(db: Session, workshop_id: int) -> Dict:
                         domain_id=activity.domain_id,
                         activity_id=activity.id,
                         issue_type="missing_A",
+                        description="Accountable role not selected",
+                        recommendation="Choose exactly one Accountable for this activity.",
                         severity="high",
                     )
                 )
@@ -56,6 +58,8 @@ def validate_workshop(db: Session, workshop_id: int) -> Dict:
                         domain_id=activity.domain_id,
                         activity_id=activity.id,
                         issue_type="too_many_A",
+                        description="Multiple Accountable roles detected",
+                        recommendation="Confirm a single Accountable and move others to R/C/I.",
                         severity="high",
                     )
                 )
@@ -66,6 +70,8 @@ def validate_workshop(db: Session, workshop_id: int) -> Dict:
                     domain_id=activity.domain_id,
                     activity_id=activity.id,
                     issue_type="missing_R",
+                    description="Responsible role missing",
+                    recommendation="Assign at least one Responsible role to do the work.",
                     severity="high",
                 )
             )
@@ -76,6 +82,8 @@ def validate_workshop(db: Session, workshop_id: int) -> Dict:
                     domain_id=activity.domain_id,
                     activity_id=activity.id,
                     issue_type="communication_gap",
+                    description="Responsibilities defined without Inform recipients",
+                    recommendation="Identify who must be Informed when work is performed.",
                     severity="medium",
                 )
             )

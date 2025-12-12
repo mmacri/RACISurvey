@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+
 from pydantic import BaseModel
 
 
@@ -71,6 +72,21 @@ class Template(BaseModel):
         orm_mode = True
 
 
+class Action(BaseModel):
+    id: int
+    workshop_id: int
+    linked_issue_id: Optional[int] = None
+    owner_role_id: Optional[int] = None
+    owner_name: Optional[str] = None
+    due_date: Optional[str] = None
+    description: str
+    status: str = "open"
+    notes: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
 class WorkshopBase(BaseModel):
     template_id: int
     org_name: Optional[str] = None
@@ -117,6 +133,8 @@ class Issue(BaseModel):
     domain_id: int
     activity_id: int
     issue_type: str
+    description: Optional[str] = None
+    recommendation: Optional[str] = None
     severity: Optional[str] = None
     status: str
     owner_role_id: Optional[int] = None

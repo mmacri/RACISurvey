@@ -121,6 +121,8 @@ class Issue(Base):
     domain_id = Column(Integer, ForeignKey("domains.id"), nullable=False)
     activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
     issue_type = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    recommendation = Column(Text, nullable=True)
     severity = Column(String, nullable=True)
     status = Column(String, default="open")
     owner_role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
@@ -128,6 +130,52 @@ class Issue(Base):
 
     workshop = relationship("Workshop", back_populates="issues")
     activity = relationship("Activity", back_populates="issues")
+
+
+class Action(Base):
+    __tablename__ = "actions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workshop_id = Column(Integer, ForeignKey("workshops.id"), nullable=False)
+    linked_issue_id = Column(Integer, ForeignKey("issues.id"), nullable=True)
+    owner_role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
+    owner_name = Column(String, nullable=True)
+    due_date = Column(String, nullable=True)
+    description = Column(Text, nullable=False)
+    status = Column(String, default="open")
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    workshop = relationship("Workshop")
+    issue = relationship("Issue")
+    owner_role = relationship("Role")
+
+
+class DecisionLog(Base):
+    __tablename__ = "decision_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workshop_id = Column(Integer, ForeignKey("workshops.id"), nullable=False)
+    domain_id = Column(Integer, ForeignKey("domains.id"), nullable=True)
+    activity_id = Column(Integer, ForeignKey("activities.id"), nullable=True)
+    decision_text = Column(Text, nullable=False)
+    decided_by = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+    workshop = relationship("Workshop")
+    domain = relationship("Domain")
+    activity = relationship("Activity")
+
+
+class Snapshot(Base):
+    __tablename__ = "snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workshop_id = Column(Integer, ForeignKey("workshops.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    blob_json = Column(JSON, nullable=False)
+
+    workshop = relationship("Workshop")
 
 
 class Export(Base):
