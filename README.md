@@ -39,6 +39,8 @@ If you want the Pages site to render even without a backend, leave the API base 
 - Snapshot cards show role load, gap counts, and now domain-by-domain coverage (percent of activities with Accountable/Responsible assignments and missing-A/R totals).
 - The template workflow accepts uploaded JSON files, the bundled Seattle City Light example, or pasted payloads to seed organizations, domains, roles, activities, and recommended RACI in one click.
 - All widgets are mirrored in both `web/index.html` and `docs/index.html` so local hosting and GitHub Pages behave the same.
+- A reporting dashboard panel bundles export links, example narrative text, and a live database snapshot so facilitators can grab workshop-ready outputs without hunting through tables. The page now includes dataset selectors and roomier sections so each dashboard (API, templates, organizations, activities, RACI, validation, reporting) occupies its own space for executive-ready reviews.
+- The landing grid is capped at a readable width and cards auto-resize for executive workshop displays.
 - A reporting dashboard panel bundles export links, example narrative text, and a live database snapshot so facilitators can grab workshop-ready outputs without hunting through tables.
 - The landing grid is capped at a readable width and cards auto-resize for executive workshop displays.
 GitHub Pages serves static files only; the dashboard still needs to reach a running API (for example, a self-hosted FastAPI instance). If your API is not at the same origin as the page, edit `apiBase` near the bottom of `docs/index.html` to point at your backend (e.g., `https://your-host/api`).
