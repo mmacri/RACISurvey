@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+raci.db
+test_raci.db
