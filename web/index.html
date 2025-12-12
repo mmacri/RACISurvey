@@ -776,6 +776,51 @@
       return `<ul class=\"small\">${items}</ul>`;
     }
 
+    function computeDomainStats(domains, activities, raci, recommended) {
+      const byId = Object.fromEntries(domains.map((d) => [d.id, d]));
+      const stats = Object.values(byId).map((d) => ({ id: d.id, name: d.name, total: 0, withA: 0, withR: 0, gapsA: 0, gapsR: 0, recommended: 0 }));
+      const statById = Object.fromEntries(stats.map((s) => [s.id, s]));
+      const recommendedByActivity = recommended.reduce((acc, rec) => {
+        acc[rec.activity_id] = (acc[rec.activity_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      activities.forEach((activity) => {
+        const bucket = statById[activity.domain_id];
+        if (!bucket) return;
+        bucket.total += 1;
+        const rows = raci.filter((r) => r.activity_id === activity.id);
+        const hasA = rows.some((r) => r.value === "A");
+        const hasR = rows.some((r) => r.value === "R");
+        bucket.recommended += recommendedByActivity[activity.id] || 0;
+        if (hasA) bucket.withA += 1; else bucket.gapsA += 1;
+        if (hasR) bucket.withR += 1; else bucket.gapsR += 1;
+      });
+
+      return stats.filter((s) => s.total > 0);
+    }
+
+    function renderDomainCards(stats) {
+      if (!stats.length) return "<div class=\"small muted\">Add domains and activities to see coverage.</div>";
+      const cards = stats
+        .map((s) => {
+          const pctA = s.total ? Math.round((s.withA / s.total) * 100) : 0;
+          const pctR = s.total ? Math.round((s.withR / s.total) * 100) : 0;
+          return `<div class=\"panel\" style=\"background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.2);\">
+              <h4 style=\"margin-top:0;\">${s.name}</h4>
+              <p class=\"small\">${s.total} activities • ${s.recommended} recommended rows</p>
+              <div class=\"small\">Accountable coverage: <strong>${pctA}%</strong> (${s.withA}/${s.total})</div>
+              <div class=\"small\">Responsible coverage: <strong>${pctR}%</strong> (${s.withR}/${s.total})</div>
+              <div class=\"small\" style=\"margin-top:6px;\">Missing A: <strong>${s.gapsA}</strong> • Missing R: <strong>${s.gapsR}</strong></div>
+            </div>`;
+        })
+        .join("");
+      return `<div class=\"grid-2\">${cards}</div>`;
+    }
+
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
@@ -803,6 +848,7 @@
         }
 
         const roleLoad = computeRoleLoad(raci);
+        const domainStats = computeDomainStats(domains, activities, raci, recommended);
 
         tablesEl.innerHTML = [
           `<div class="panel" style="background:rgba(255,255,255,0.02);">
@@ -818,6 +864,11 @@
                 ${renderGapSummary(issues)}
               </div>
             </div>
+          </div>`,
+          `<div class="panel" style="background:rgba(34,197,94,0.05);border-color:rgba(34,197,94,0.2);">
+            <h3 style="margin-top:0;">Domain coverage</h3>
+            <p class="small">Track accountable/responsible completion per domain to mirror the workshop walkthrough flow.</p>
+            ${renderDomainCards(domainStats)}
           </div>`,
         tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
