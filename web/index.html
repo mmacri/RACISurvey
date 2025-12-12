@@ -244,6 +244,11 @@
         </div>
       </div>
       <p class="small muted">Tip: create or choose a workshop, click <strong>Set as current</strong>, then use the export buttons below during your session.</p>
+          <input name="description" placeholder="Description" />
+        </div>
+        <button type="submit">Create workshop</button>
+      </form>
+      <p class="small muted">Current workshop ID: <span id="current-workshop">not set</span></p>
     </section>
 
     <section class="panel">
@@ -598,6 +603,7 @@
       const fromQuery = params.get("api");
       const fromStorage = localStorage.getItem("apiBase");
       const derived = fromQuery || fromStorage || "demo";
+      const derived = fromQuery || fromStorage || "";
       apiInput.value = derived;
       apiTarget.textContent = derived || "(relative to page)";
       return derived;
@@ -859,6 +865,12 @@
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities] = await Promise.all([
           fetchJSON("/organizations"),
           fetchJSON("/workshops"),
           fetchJSON("/domains"),
@@ -906,6 +918,7 @@
             <p class="small">Track accountable/responsible completion per domain to mirror the workshop walkthrough flow.</p>
             ${renderDomainCards(domainStats)}
           </div>`,
+        tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
           renderTable("Domains", domains),
