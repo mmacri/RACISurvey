@@ -228,6 +228,22 @@
         </div>
         <div class="grid-2">
           <input name="date" type="date" />
+        <input name="description" placeholder="Description" />
+      </div>
+      <button type="submit">Create workshop</button>
+      </form>
+      <p class="small muted">Current workshop ID: <span id="current-workshop">not set</span></p>
+      <div class="grid-2" style="margin-top:12px;">
+        <div>
+          <label class="small" for="workshop-select">Pick existing workshop</label>
+          <select id="workshop-select"></select>
+        </div>
+        <div class="inline-actions" style="align-items:flex-end;">
+          <button type="button" id="set-workshop">Set as current</button>
+          <button type="button" id="remember-workshop">Remember</button>
+        </div>
+      </div>
+      <p class="small muted">Tip: create or choose a workshop, click <strong>Set as current</strong>, then use the export buttons below during your session.</p>
           <input name="description" placeholder="Description" />
         </div>
         <button type="submit">Create workshop</button>
@@ -311,6 +327,18 @@
       <div id="validation-results" class="small muted"></div>
     </section>
 
+    <section class="panel" id="exports">
+      <h2>Workshop outputs</h2>
+      <p class="small">Download the live RACI matrix, gap list, and action plan for the current workshop. Works in demo mode on GitHub Pages or against your FastAPI backend.</p>
+      <div class="inline-actions" style="flex-wrap:wrap;">
+        <button type="button" data-export="raci">Download RACI CSV</button>
+        <button type="button" data-export="gaps">Download gaps CSV</button>
+        <button type="button" data-export="actions">Download actions CSV</button>
+        <button type="button" id="copy-json">Copy full dataset (JSON)</button>
+      </div>
+      <p class="small muted">Exports use the workshop ID shown above. Remember it to rehydrate the same session later.</p>
+    </section>
+
     <section class="panel">
       <h2>Data overview</h2>
       <div class="small muted">These tables read directly from the API. Set a current workshop to view issues/actions.</div>
@@ -324,6 +352,9 @@
     const apiTarget = document.getElementById("api-target");
     const saveApiBtn = document.getElementById("save-api");
     const currentWorkshopEl = document.getElementById("current-workshop");
+    const workshopSelect = document.getElementById("workshop-select");
+    const setWorkshopBtn = document.getElementById("set-workshop");
+    const rememberWorkshopBtn = document.getElementById("remember-workshop");
     const tablesEl = document.getElementById("tables");
     const validationEl = document.getElementById("validation-results");
     const validateWorkshopInput = document.getElementById("validate-workshop-id");
@@ -579,6 +610,7 @@
     }
 
     let apiBase = resolveApiBase();
+    let lastSnapshot = null;
 
     const setStatus = (text, ok = true) => {
       healthEl.textContent = text;
@@ -684,6 +716,18 @@
       if (!id) return;
       currentWorkshopEl.textContent = id;
       validateWorkshopInput.value = id;
+      localStorage.setItem("currentWorkshopId", id);
+    }
+
+    function populateWorkshopSelect(workshops) {
+      const defaultOption = `<option value="">Select a workshop</option>`;
+      const options = workshops.map((w) => `<option value="${w.id}">${w.name} (Org ${w.organization_id})</option>`).join("");
+      workshopSelect.innerHTML = defaultOption + options;
+      const stored = localStorage.getItem("currentWorkshopId");
+      if (stored) {
+        workshopSelect.value = stored;
+        setCurrentWorkshop(stored);
+      }
     }
 
     handleForm(formOrg, (data) => fetchJSON("/organizations", { method: "POST", body: JSON.stringify(data) }));
@@ -776,6 +820,51 @@
       return `<ul class=\"small\">${items}</ul>`;
     }
 
+    function computeDomainStats(domains, activities, raci, recommended) {
+      const byId = Object.fromEntries(domains.map((d) => [d.id, d]));
+      const stats = Object.values(byId).map((d) => ({ id: d.id, name: d.name, total: 0, withA: 0, withR: 0, gapsA: 0, gapsR: 0, recommended: 0 }));
+      const statById = Object.fromEntries(stats.map((s) => [s.id, s]));
+      const recommendedByActivity = recommended.reduce((acc, rec) => {
+        acc[rec.activity_id] = (acc[rec.activity_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      activities.forEach((activity) => {
+        const bucket = statById[activity.domain_id];
+        if (!bucket) return;
+        bucket.total += 1;
+        const rows = raci.filter((r) => r.activity_id === activity.id);
+        const hasA = rows.some((r) => r.value === "A");
+        const hasR = rows.some((r) => r.value === "R");
+        bucket.recommended += recommendedByActivity[activity.id] || 0;
+        if (hasA) bucket.withA += 1; else bucket.gapsA += 1;
+        if (hasR) bucket.withR += 1; else bucket.gapsR += 1;
+      });
+
+      return stats.filter((s) => s.total > 0);
+    }
+
+    function renderDomainCards(stats) {
+      if (!stats.length) return "<div class=\"small muted\">Add domains and activities to see coverage.</div>";
+      const cards = stats
+        .map((s) => {
+          const pctA = s.total ? Math.round((s.withA / s.total) * 100) : 0;
+          const pctR = s.total ? Math.round((s.withR / s.total) * 100) : 0;
+          return `<div class=\"panel\" style=\"background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.2);\">
+              <h4 style=\"margin-top:0;\">${s.name}</h4>
+              <p class=\"small\">${s.total} activities • ${s.recommended} recommended rows</p>
+              <div class=\"small\">Accountable coverage: <strong>${pctA}%</strong> (${s.withA}/${s.total})</div>
+              <div class=\"small\">Responsible coverage: <strong>${pctR}%</strong> (${s.withR}/${s.total})</div>
+              <div class=\"small\" style=\"margin-top:6px;\">Missing A: <strong>${s.gapsA}</strong> • Missing R: <strong>${s.gapsR}</strong></div>
+            </div>`;
+        })
+        .join("");
+      return `<div class=\"grid-2\">${cards}</div>`;
+    }
+
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
@@ -790,6 +879,8 @@
           fetchJSON("/recommended"),
         ]);
 
+        populateWorkshopSelect(workshops);
+
         const currentId = validateWorkshopInput.value || currentWorkshopEl.textContent;
         let issues = [], actions = [], raci = [];
         if (currentId && currentId !== "not set") {
@@ -803,6 +894,9 @@
         }
 
         const roleLoad = computeRoleLoad(raci);
+        const domainStats = computeDomainStats(domains, activities, raci, recommended);
+
+        lastSnapshot = { orgs, workshops, domains, roles, activities, recommended, raci, issues, actions };
 
         tablesEl.innerHTML = [
           `<div class="panel" style="background:rgba(255,255,255,0.02);">
@@ -819,6 +913,11 @@
               </div>
             </div>
           </div>`,
+          `<div class="panel" style="background:rgba(34,197,94,0.05);border-color:rgba(34,197,94,0.2);">
+            <h3 style="margin-top:0;">Domain coverage</h3>
+            <p class="small">Track accountable/responsible completion per domain to mirror the workshop walkthrough flow.</p>
+            ${renderDomainCards(domainStats)}
+          </div>`,
         tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
@@ -834,6 +933,115 @@
         setStatus(err.message, false);
       }
     }
+
+    function getCurrentWorkshopId() {
+      const fromDisplay = currentWorkshopEl.textContent;
+      if (fromDisplay && fromDisplay !== "not set") return fromDisplay;
+      if (workshopSelect.value) return workshopSelect.value;
+      return null;
+    }
+
+    setWorkshopBtn.addEventListener("click", () => {
+      if (!workshopSelect.value) {
+        setStatus("Pick a workshop from the list first", false);
+        return;
+      }
+      setCurrentWorkshop(workshopSelect.value);
+      setStatus(`Current workshop set to ${workshopSelect.value}`);
+    });
+
+    rememberWorkshopBtn.addEventListener("click", () => {
+      const id = getCurrentWorkshopId();
+      if (!id) {
+        setStatus("No workshop selected to remember", false);
+        return;
+      }
+      localStorage.setItem("currentWorkshopId", id);
+      setStatus(`Remembered workshop ${id} for next visit`);
+    });
+
+    function buildCsv(type) {
+      if (!lastSnapshot) {
+        throw new Error("Load data first with Refresh data");
+      }
+      const { roles, activities, raci, issues, actions } = lastSnapshot;
+      const workshopId = getCurrentWorkshopId();
+      if (!workshopId) throw new Error("Set a workshop ID first");
+
+      if (type === "raci") {
+        const byActivity = activities.filter((a) => raci.some((r) => String(r.workshop_id) === String(workshopId) && r.activity_id === a.id));
+        const header = ["Activity", ...roles.map((r) => r.name)];
+        const rows = byActivity.map((activity) => {
+          const row = [activity.name];
+          roles.forEach((role) => {
+            const match = raci.find((r) => String(r.workshop_id) === String(workshopId) && r.activity_id === activity.id && r.role_id === role.id);
+            row.push(match?.value || "");
+          });
+          return row;
+        });
+        return [header, ...rows].map((r) => r.join(",")).join("\n");
+      }
+
+      if (type === "gaps") {
+        const filtered = issues.filter((i) => String(i.workshop_id) === String(workshopId));
+        const header = ["Activity ID", "Role ID", "Type", "Severity", "Notes"];
+        const rows = filtered.map((i) => [i.activity_id, i.role_id || "", i.type, i.severity || "", (i.notes || "").replace(/\n/g, " ")]);
+        return [header, ...rows].map((r) => r.join(",")).join("\n");
+      }
+
+      if (type === "actions") {
+        const filtered = actions.filter((a) => String(a.workshop_id) === String(workshopId));
+        const header = ["Summary", "Owner Role", "Status", "Priority", "Due Date", "Issue ID"];
+        const rows = filtered.map((a) => [a.summary, a.owner_role_id || "", a.status, a.priority || "", a.due_date || "", a.issue_id || ""]);
+        return [header, ...rows].map((r) => r.join(",")).join("\n");
+      }
+
+      throw new Error("Unknown export type");
+    }
+
+    async function downloadExport(type) {
+      const workshopId = getCurrentWorkshopId();
+      if (!workshopId) {
+        setStatus("Set a workshop before exporting", false);
+        return;
+      }
+
+      try {
+        let csv;
+        if (apiBase === "demo") {
+          csv = buildCsv(type);
+        } else {
+          const res = await fetch(`${apiBase.replace(/\/$/, "")}/workshops/${workshopId}/export/${type}`);
+          if (!res.ok) throw new Error(`Export failed (${res.status})`);
+          csv = await res.text();
+        }
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `workshop_${workshopId}_${type}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setStatus(`Downloaded ${type.toUpperCase()} export for workshop ${workshopId}`);
+      } catch (err) {
+        setStatus(err.message, false);
+      }
+    }
+
+    document.querySelectorAll('#exports [data-export]').forEach((btn) => {
+      btn.addEventListener('click', () => downloadExport(btn.getAttribute('data-export')));
+    });
+
+    document.getElementById("copy-json").addEventListener("click", () => {
+      if (!lastSnapshot) {
+        setStatus("Load data first with Refresh data", false);
+        return;
+      }
+      const payload = JSON.stringify(lastSnapshot, null, 2);
+      navigator.clipboard.writeText(payload).then(() => {
+        setStatus("Copied dataset JSON to clipboard");
+      }).catch(() => setStatus("Unable to copy to clipboard", false));
+    });
 
     // Initial load
     ping();
