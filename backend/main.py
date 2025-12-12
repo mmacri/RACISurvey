@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from backend.db import models
 from backend.db.database import Base, engine, get_db
 from backend.schemas import (
+    Action as ActionSchema,
     Activity,
     ActivityAssignments,
     Assignment,
@@ -49,6 +50,11 @@ def index():
     if index_path.exists():
         return index_path.read_text()
     return "<h1>OT RACI Workshop Wizard</h1>"
+
+
+@app.get("/api/health")
+def healthcheck():
+    return {"status": "ok"}
 
 
 @app.post("/api/templates/upload", response_model=TemplateUploadResponse)
@@ -260,6 +266,45 @@ def progress(workshop_id: int, db: Session = Depends(get_db)):
     return {"complete": complete, "total": total, "percent": round((complete / total) * 100, 1) if total else 0}
 
 
+@app.get("/api/workshops/{workshop_id}/actions", response_model=List[ActionSchema])
+def list_actions(workshop_id: int, db: Session = Depends(get_db)):
+    actions = db.query(models.Action).filter(models.Action.workshop_id == workshop_id).all()
+    return [ActionSchema.from_orm(a) for a in actions]
+
+
+@app.post("/api/workshops/{workshop_id}/actions/generate", response_model=List[ActionSchema])
+def generate_actions(workshop_id: int, db: Session = Depends(get_db)):
+    issues = (
+        db.query(models.Issue)
+        .filter(models.Issue.workshop_id == workshop_id)
+        .filter(models.Issue.status == "open")
+        .all()
+    )
+    created: List[models.Action] = []
+    for issue in issues:
+        existing = (
+            db.query(models.Action)
+            .filter(models.Action.workshop_id == workshop_id)
+            .filter(models.Action.linked_issue_id == issue.id)
+            .first()
+        )
+        if existing:
+            continue
+        action = models.Action(
+            workshop_id=workshop_id,
+            linked_issue_id=issue.id,
+            description=issue.recommendation or f"Resolve issue {issue.issue_type}",
+            status="open",
+        )
+        db.add(action)
+        db.flush()
+        created.append(action)
+    db.commit()
+    for action in created:
+        db.refresh(action)
+    return [ActionSchema.from_orm(a) for a in created]
+
+
 @app.post("/api/workshops/{workshop_id}/validate", response_model=ValidationResult)
 def validate(workshop_id: int, db: Session = Depends(get_db)):
     if not db.query(models.Workshop).get(workshop_id):
@@ -332,6 +377,27 @@ def export_actions(workshop_id: int, db: Session = Depends(get_db)):
     db.add(export_row)
     db.commit()
     return FileResponse(path, media_type="text/csv")
+
+
+@app.post("/api/workshops/{workshop_id}/snapshot")
+def snapshot(workshop_id: int, db: Session = Depends(get_db)):
+    workshop = db.query(models.Workshop).get(workshop_id)
+    if not workshop:
+        raise HTTPException(status_code=404, detail="Workshop not found")
+    payload = {
+        "workshop": Workshop.from_orm(workshop).dict(),
+        "domains": [Domain.from_orm(d).dict() for d in workshop.domains],
+        "roles": [Role.from_orm(r).dict() for r in workshop.roles],
+        "activities": [Activity.from_orm(a).dict() for a in workshop.activities],
+        "assignments": [Assignment.from_orm(a).dict() for a in workshop.assignments],
+        "issues": [IssueSchema.from_orm(i).dict() for i in workshop.issues],
+        "actions": [ActionSchema.from_orm(a).dict() for a in db.query(models.Action).filter(models.Action.workshop_id == workshop_id).all()],
+    }
+    snap = models.Snapshot(workshop_id=workshop_id, blob_json=payload)
+    db.add(snap)
+    db.commit()
+    db.refresh(snap)
+    return payload
 
 
 @app.get("/api/workshops/{workshop_id}/downloads/{file_path:path}")

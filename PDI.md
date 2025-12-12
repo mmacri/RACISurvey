@@ -1,89 +1,96 @@
-# OT RACI Workshop Wizard — Product Definition & Implementation (PDI)
+# OT RACI Workshop Assistant — Product Definition & Implementation (PDI)
 
-## 1. Problem statement
-Leadership teams need to agree on OT RACI ownership quickly and defensibly. The canonical Excel workbook is the source of truth, but running an in-room session off spreadsheets creates friction, gaps, and low-confidence outputs. The app must turn that workbook into a guided workshop experience that enforces decision rules, highlights conflicts, and produces executive-ready deliverables without relying on external services.
+## Project overview + goals
+A self-hosted facilitator tool that turns the canonical OT RACI Excel into a guided workshop experience. The goals are to:
+- Ingest the canonical workbook as the source of truth for domains, activities, and role headers.
+- Drive an A-first wizard that elicits and confirms R/A/C/I decisions from leadership (no auto-guessing).
+- Validate coverage live, capture parking-lot items, and convert gaps into actionable follow-ups.
+- Export executive-ready outputs (filled Excel, CSV bundle, PPTX/PDF pack) plus JSON snapshots for audit.
 
-## 2. Users & personas
-- **Facilitator (primary):** Sets up the workshop from the uploaded Excel, curates roles/aliases, drives the wizard, records notes and follow-ups, and owns exports.
-- **Participants (CIO + directs):** Respond to guided RACI prompts during the session; may view a mirrored read-only participant screen.
-- **Executive reader (Mujib):** Consumes the Executive Pack (PDF/PPTX) plus the filled Excel/action register to make decisions.
+## How Excel import works (sheet parsing rules)
+- Upload endpoint: `POST /api/templates/upload` accepts base64 XLSX; file is persisted to `data/uploads`.
+- Parser iterates sheets ending with `raci` (case-insensitive):
+  - Detects the first header row containing any non-empty cells after column A; those cells become **Roles** (with column indexes and domain binding to the sheet).
+  - Column A drives hierarchy: an isolated value becomes the current **Section**; subsequent rows with text in column A and optional R/A/C/I marks become **Activities** under the sheet/domain.
+  - Each populated R/A/C/I cell is captured as a recommended starting assignment and its `(row, column)` coordinates for round-tripping.
+- `Instructions*` sheets are concatenated into guidance text; `Lists*` sheets become drop-down sources.
+- Parsed payload stored with SHA-256 file hash, domains, roles, activities (with cell map), instructions, and lists for later export fidelity.
 
-## 3. Workshop flow (agenda support)
-- **Phase 0 — Pre-work (15–30 min):** Upload Excel, select domains/sheets, mark out-of-scope activities, harmonize roles/aliases, map attendees, publish agenda/rules.
-- **Phase 1 — Kickoff (10 min):** Display purpose, RACI definitions, validation rules (exactly one A, at least one R), scope confirmation, and “rules of engagement” from the Instructions sheet.
-- **Phase 2 — Guided walkthrough (45–75 min):** Domain → Section → Activity wizard asks Responsible, Accountable, Consulted, Informed in order; enforces validation; captures notes/evidence/parking; allows matrix picker.
-- **Phase 3 — Gap triage (10–20 min):** Auto-surface missing A/R, multiple As, communication gaps, overloaded roles, out-of-scope items; convert to Action Register entries or resolve live.
-- **Phase 4 — Executive pack (5–10 min):** Generate filled Excel, PDF Executive Summary, PPTX deck, action register CSV/XLSX, and JSON snapshot for the workshop.
+## How wizard mode works (A-first)
+- Wizard steps: select org/workshop → upload Excel → choose in-scope domains → run domain walkthrough → review issues → export executive pack.
+- For each activity, the wizard prompts in order: **Accountable** (single select, required), **Responsible** (multi-select), **Consulted**, **Informed**.
+- Recommended answers from Excel are shown but require explicit confirmation. Facilitator can mark an item for parking lot with owner/due date.
+- Decision logging: submissions can be written to the `decision_logs` table (API-ready) for who decided and when.
 
-## 4. Excel canonical contract
-- Workbook sheet names become domains (e.g., `APPLICATIONS RACI`, `INFRASTRUCTURE RACI`, `POLICY RACI`).
-- Role headers live in the first populated header row (columns B..N). Role names/aliases are captured with order and column index.
-- Column A lists sections and activities. Section headers have text in column A with other cells empty; activities have text plus optional R/A/C/I seeds across role columns. Blank cells are undecided values to be filled in the workshop.
-- `Instructions*` sheets are ingested as workshop guidance text. `Lists*` sheets become dropdown sources for setup UI. Additional hi-level mapping sheets may preload suggested owners.
-- Parsed template JSON persists per upload with file hash, domains, roles (with column indices), activities (with section, order, and cell map coordinates), instructions, and list values. The source Excel file remains untouched.
+## Validation rules catalog
+- Exactly one **A** per activity (critical) → `missing_A` or `too_many_A` issues.
+- At least one **R** per activity (critical) → `missing_R` issue.
+- Communication gap warning when R exists without any I → `communication_gap` issue.
+- Rules are enforced via `POST /api/workshops/{id}/validate`; results persisted as Issue rows with recommendations for remediation.
 
-## 5. Data model
-Tables (SQLite):
-- **templates**: id, name, uploaded_filename, file_hash, parsed_json, created_at.
-- **workshops**: id, template_id, org_name, workshop_name, status, created_at, updated_at.
-- **domains**: id, workshop_id, sheet_name, display_name, order_index.
-- **roles**: id, workshop_id, domain_id (nullable), role_name, role_key, order_index.
-- **activities**: id, workshop_id, domain_id, activity_text, section_text, order_index, in_scope_bool.
-- **assignments**: id, workshop_id, domain_id, activity_id, role_id, raci_value, updated_at.
-- **notes**: id, workshop_id, domain_id, activity_id, note_text, created_at.
-- **issues**: id, workshop_id, domain_id, activity_id, issue_type, severity, status, owner_role_id, due_date.
-- **exports**: id, workshop_id, export_type, filepath, created_at.
+## Export formats + executive pack definition
+- **Excel**: fills the original workbook structure using captured cell coordinates; appends `Outputs` sheet with metadata and timestamp.
+- **CSV bundle**: action register export via `POST /api/workshops/{id}/export/actions` (description, owner, due, status, linked issue).
+- **PPTX/PDF**: generated through `POST /api/workshops/{id}/export/pptx` and `/export/pdf` with summary placeholders (completion %, issues) and saved to `data/exports`.
+- **Snapshot JSON**: `POST /api/workshops/{id}/snapshot` captures domains, roles, activities, assignments, issues, and actions for audit/versioning.
 
-## 6. Validation rules
-- Hard checks (block next): exactly one **A**, at least one **R** per activity.
-- Soft warnings: communication gap when R exists with no I, overloaded A/R per role across activities (future enhancement), uncovered activities, and conflicting As.
-- Issues raised during validation feed the Gap Triage screen and Action Register.
-
-## 7. UI map + wireframes
-- **Dashboard (index.html):** Create/Resume workshop, upload template, export center, completion and open-issue widgets.
-- **Workshop Setup:** Template upload, domain/scope selection, role merge/rename, attendee-role mapping, QR/session link.
-- **Guided Wizard:** Left rail with domains/sections/progress; activity card with R/A/C/I chips, notes, evidence, flag-as-gap, jump-to-matrix.
-- **Gap Triage:** Table of issues (type, activity, why, proposed fix, owner, due, status) with resolve/assign/out-of-scope actions.
-- **Executive Pack:** Download buttons for Excel, PDF, PPTX, Action Register, and JSON snapshot; summary cards for scope/completion/gaps.
-- **Template Library & Settings:** Manage uploaded templates and runtime settings (validation rules, thresholds).
-
-## 8. Export definitions
-- **Filled Excel:** Mirrors uploaded workbook sheets; fills RACI cells using parsed coordinates; adds an `Outputs` sheet with metadata and gap/action summaries.
-- **Executive PDF:** “OT RACI Current State – Executive Readout” with scope, counts, completion by domain, top gaps, decisions required, action register highlights, and appendix definitions.
-- **PPTX (10 slides):** Title/context; scope & participants; findings; domain completion heatmap; ownership gaps; conflict gaps; role overload; leadership decisions; action plan/timeline; method/definitions.
-- **Action Register:** CSV/XLSX detailing issue type, needed decision, owner role, due date, dependencies, status.
-- **JSON snapshot:** Export of template structure, assignments, notes, issues, and actions.
-
-## 9. Deployment guide
-- **Local:**
+## Runbook (local + docker)
+- **Local API**
   ```bash
   pip install -r requirements.txt
   uvicorn backend.main:app --reload
   # open http://localhost:8000
   ```
-- **Frontend (static):** `web/` hosts the dashboard shell; can be served via FastAPI static hosting or GitHub Pages pointed at built assets (backend hosted elsewhere).
-- **Data storage:** SQLite under `./data/`; uploads in `./data/uploads`; exports in `./data/exports`.
-- **Self-hosted only:** No external service calls are required for parsing or export.
+- **Docker Compose**
+  ```bash
+  docker compose up --build
+  # backend exposed on 8000
+  ```
+- Data directories: SQLite under `data/`, uploads in `data/uploads`, exports in `data/exports`.
 
-## 10. Security & privacy posture
-- All processing stays local (Excel parsing, validation, exports). No outbound API calls.
-- SQLite and file storage are scoped to the deployment host. Users control uploads/downloads explicitly.
-- Workshop IDs and template hashes prevent accidental cross-workshop leakage; attachments are served via explicit download endpoints.
+## Data model diagram (mermaid)
+```mermaid
+erDiagram
+    Template ||--o{ Workshop : seeds
+    Workshop ||--o{ Domain : contains
+    Workshop ||--o{ Role : owns
+    Workshop ||--o{ Activity : catalogs
+    Domain ||--o{ Activity : groups
+    Activity ||--o{ Assignment : has
+    Role ||--o{ Assignment : contributes
+    Workshop ||--o{ Issue : flags
+    Issue ||--o{ Action : may_trigger
+    Workshop ||--o{ Action : tracks
+    Workshop ||--o{ DecisionLog : records
+    Workshop ||--o{ Snapshot : versions
+```
 
-## 11. Testing plan + acceptance tests
-- **Unit/API tests:**
-  - Upload Excel → detect domains, roles, and activity count.
-  - Create workshop → fetch domains/roles/activities from parsed template.
-  - Attempt to proceed without Accountable → validation returns `missing_A` issue.
-  - Assignments saved via bulk endpoint reflect in progress metrics.
-  - Export Excel/PDF/PPTX endpoints respond with files for offline use.
-- **Manual acceptance passes:**
-  1) Upload Excel → app displays detected domains/roles/activities.
-  2) Start workshop → first activity/roles load in wizard UI.
-  3) Proceed without Accountable → blocked with clear message; validation surfaces issue.
-  4) Complete 10 activities → progress shows % complete by domain.
-  5) Validation surfaces incomplete/conflicting activities and overload warnings.
-  6) Export Excel mirrors original layout with RACI values filled and outputs sheet.
-  7) Executive PDF includes required sections and top gaps.
-  8) PPTX contains ten populated slides.
-  9) App runs fully offline on localhost.
+## API contract (endpoints + payloads)
+- `GET /api/health` → `{status:"ok"}`.
+- `POST /api/templates/upload` → Template metadata + parsed domains/roles/activities.
+- `POST /api/workshops` → create workshop from template (org/workshop names).
+- `GET /api/workshops` → list workshops.
+- `GET /api/workshops/{id}/domains|roles|activities` → scoped catalog for wizard/matrix.
+- `PUT /api/workshops/{id}/assignments/bulk` → `{domain_id, assignments:[{activity_id, role_id, raci_value}]}`.
+- `GET /api/workshops/{id}/progress` → completion stats.
+- `POST /api/workshops/{id}/validate` → persists issues with severity/recommendations.
+- `GET /api/workshops/{id}/actions` → list action register; `POST /api/workshops/{id}/actions/generate` converts open issues to actions.
+- Exports: `/export/excel`, `/export/pdf`, `/export/pptx`, `/export/actions`, `/snapshot`.
+
+## UX flows (step-by-step)
+1. Dashboard (`/`): start wizard, view progress tiles (domains loaded, completion %, open issues/actions), quick resume.
+2. Wizard setup: select organization/workshop or create new; upload canonical Excel; confirm detected domains/roles/activities.
+3. Scope: pick domains for this session; defer others.
+4. Guided decisions: A-first prompts, recommended seeds, validation banners, parking-lot capture.
+5. Matrix editor: grid view for rapid edits; filters for missing A/R and notes per cell.
+6. Issues & Actions: validate, convert issues to actions, manage parking lot with owner/due dates.
+7. Reports: heatmaps and executive narrative blocks; trigger PPTX/PDF exports.
+
+## Acceptance tests checklist
+- Upload Excel parses domains, roles, activities, and instructions without altering sheet order.
+- Workshop creation seeds domain/role/activity records tied to template.
+- Validation fails when Accountable missing or multiple; surfaces communication gaps.
+- Issue-to-action conversion creates actionable rows with linked issue references.
+- Excel export preserves original sheet/column layout and fills confirmed assignments at stored coordinates; Outputs sheet stamped with workshop metadata.
+- PPTX/PDF endpoints respond with generated files; CSV actions export lists owners/dates/status.
+- Snapshot endpoint returns and stores serialized workshop state for offline audit.
