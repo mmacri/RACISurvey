@@ -200,11 +200,15 @@
         <button type="button" id="ping-api">Ping API</button>
         <button type="button" id="refresh-data">Refresh data</button>
       </div>
+    <div class="inline-actions">
+      <button type="button" id="ping-api">Ping API</button>
+      <button type="button" id="refresh-data">Refresh data</button>
     </div>
   </header>
 
   <main>
     <section class="panel hero" id="control-center">
+    <section class="panel hero">
       <div>
         <h2>Workshop control center</h2>
         <p>Load your template (organizations, domains, roles, activities) and drive workshops end-to-end from this page. All calls stay local to your deployment, keeping workshops private and GitHub-friendly.</p>
@@ -223,6 +227,7 @@
     </section>
 
     <section class="panel" id="api-status">
+    <section class="panel">
       <h2>API status</h2>
       <div id="health" class="status">Waiting for ping...</div>
       <div class="api-config">
@@ -237,6 +242,7 @@
     </section>
 
     <section class="panel" id="template-import">
+    <section class="panel">
       <h2>Template import</h2>
       <p class="small">Upload a JSON template (matching <code>/templates/example</code>) to seed organizations, domains, roles, activities, and recommended RACI in one step.</p>
       <div class="grid-2">
@@ -254,6 +260,7 @@
     </section>
 
     <section class="panel" id="organizations">
+    <section class="panel">
       <h2>Create organization</h2>
       <form id="form-org">
         <input name="name" placeholder="Name (e.g., Contoso Energy)" required />
@@ -264,6 +271,7 @@
     </section>
 
     <section class="panel" id="workshops">
+    <section class="panel">
       <h2>Create workshop</h2>
       <form id="form-workshop">
         <div class="grid-2">
@@ -291,6 +299,14 @@
     </section>
 
     <section class="panel" id="domains-roles">
+          <input name="description" placeholder="Description" />
+        </div>
+        <button type="submit">Create workshop</button>
+      </form>
+      <p class="small muted">Current workshop ID: <span id="current-workshop">not set</span></p>
+    </section>
+
+    <section class="panel">
       <h2>Domains & Roles</h2>
       <form id="form-domain">
         <div class="grid-2">
@@ -315,6 +331,7 @@
     </section>
 
     <section class="panel" id="activities">
+    <section class="panel">
       <h2>Activities</h2>
       <form id="form-activity">
         <div class="grid-2">
@@ -332,6 +349,7 @@
     </section>
 
     <section class="panel" id="raci-assignments">
+    <section class="panel">
       <h2>RACI assignments</h2>
       <form id="form-raci">
         <div class="grid-2">
@@ -353,6 +371,7 @@
     </section>
 
     <section class="panel" id="validate-actions">
+    <section class="panel">
       <h2>Validate & Actions</h2>
       <div class="grid-2">
         <input id="validate-workshop-id" placeholder="Workshop ID" />
@@ -379,6 +398,7 @@
     </section>
 
     <section class="panel" id="data-overview">
+    <section class="panel">
       <h2>Data overview</h2>
       <div class="small muted">These tables read directly from the API. Set a current workshop to view issues/actions.</div>
       <div id="tables"></div>
@@ -642,6 +662,7 @@
       const fromQuery = params.get("api");
       const fromStorage = localStorage.getItem("apiBase");
       const derived = fromQuery || fromStorage || "demo";
+      const derived = fromQuery || fromStorage || "";
       apiInput.value = derived;
       apiTarget.textContent = derived || "(relative to page)";
       return derived;
@@ -903,6 +924,12 @@
     async function refreshTables() {
       try {
         const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities, recommended] = await Promise.all([
+    async function refreshTables() {
+      try {
+        const [orgs, workshops, domains, roles, activities] = await Promise.all([
           fetchJSON("/organizations"),
           fetchJSON("/workshops"),
           fetchJSON("/domains"),
@@ -950,6 +977,7 @@
             <p class="small">Track accountable/responsible completion per domain to mirror the workshop walkthrough flow.</p>
             ${renderDomainCards(domainStats)}
           </div>`,
+        tablesEl.innerHTML = [
           renderTable("Organizations", orgs),
           renderTable("Workshops", workshops),
           renderTable("Domains", domains),
