@@ -1,95 +1,127 @@
-# OT RACI Workshop App – Product Definition & Implementation (PDI)
+# OT RACI Workshop Product Definition & Implementation (PDI)
 
-## 1. Purpose
-A self-hosted OT RACI Workshop app that ingests the canonical Excel template, guides executives through RACI decisions via a wizard, validates governance gaps live, and outputs an executive-ready pack. The experience must feel like a workshop instrument—not an admin console.
+## Purpose
+Turn the OT RACI Excel workbook into a guided, repeatable workshop system that captures decisions quickly, validates gaps live, and generates an executive pack for Mujib. The app must feel like a facilitation instrument—not a developer console—and run fully self-hosted.
 
-## 2. Success criteria
-- Uploading `DRAFT_OT_RACI_TEMPLATE_v.1 copy.xlsx` creates a workshop with roles, domains, and activities extracted from the APPLICATIONS RACI, POLICY RACI, and INFRASTRUCTURE RACI sheets.
-- Wizard enforces exactly one Accountable and at least one Responsible per activity (or an explicit “accept gap” with a note).
-- Reporting produces:
-  - RACI matrix export (CSV + printable HTML/PDF).
-  - Gap register (CSV + on-screen) with severity.
-  - Action plan (CSV + on-screen) derived from gaps.
-  - Executive narrative (editable HTML blocks + export).
-- App runs fully self-hosted (local FastAPI + SQLite + static frontend) with no external services required.
+## Personas & Modes
+- **Facilitator (primary):** Drives the wizard, captures decisions/notes/exceptions, creates follow-ups, and keeps the room moving.
+- **Participants (CIO/leadership room):** View-only participant screen that mirrors the current activity/question and context.
+- **Executive reader (Mujib):** Consumes the executive pack (matrix, gaps, decisions, actions, summaries).
 
-## 3. Target users
-- **CIO / CISO / OT leadership** – need a decision-first wizard and executive outputs.
-- **OT engineering / plant ops** – participate in decisions and supply contacts for systems.
-- **Risk / compliance / GRC** – rely on gap register and action plan.
-- **Facilitator** – configures the workshop from Excel and drives the wizard.
+Operating modes:
+- **Facilitator Mode:** Guided wizard with A/R/C/I prompts, notes, exceptions, follow-ups, parking lot, and progress.
+- **Participant View:** Read-only display of the current activity, context, and selected R/A/C/I assignments.
+- **Executive Pack Mode:** One-click generation of matrix, gap register, decision log, action plan, and summary heatmaps.
 
-## 4. Workshop flow & required behavior
-- **Phase 0 — Pre-work (setup)**: Upload Excel, choose matrix sheets (Apps/Policy/Infra), pick scope (domains), auto-build roles/domains/activities, optionally leave assignments blank. Output: agenda, scope confirmation, workshop link/QR.
-- **Phase 1 — Kickoff (charter)**: Display RACI definitions and rules, show today’s scope counts, capture attendees and any missing roles.
-- **Phase 2 — Guided decisioning (wizard)**:
-  - For each domain/section: pick one Accountable, then Responsible(s), then Consulted/Informed.
-  - Force A selection before moving on; allow parking lot items and decision notes/assumptions.
-  - Provide progress bar, parking lot list, and validation heatmap per domain.
-- **Phase 3 — Inventory linkage**: From APPLICATION Hi-Level and OT Environment Hi-Level sheets, capture primary/backup contacts and link system functions to R/A/C/I roles; flag missing contacts.
-- **Phase 4 — Executive pack**: One-click generation of decision summary, matrices, gap register, action plan, and narrative recommendations.
+## Excel as Canonical Source
+- Workbook sheets treated as domains: **APPLICATIONS RACI**, **POLICY RACI**, **INFRASTRUCTURE RACI**.
+- Roles = row 0, columns 1..N (first populated header row). Role names become `roles` records.
+- Sections = rows where column 0 is populated and the remaining cells are empty. They group subsequent activities.
+- Activities = rows under the active section where column 0 has text. Cells across role columns may hold initial R/A/C/I values.
+- Inventory sheets: **APPLICATION Hi-Level** and **OT Environment Hi-Level** provide system/function entries with ownership and contacts.
+- Template JSON persisted per import: `domains[{name, sections[{name, activities[{id,text,order}]}]}]`, `roles[{id,name}]`, plus configured rules (e.g., exactly one A).
 
-## 5. Product capabilities (must-haves)
-- **Start New Workshop**: Upload Excel, name workshop, choose scope, preview extracted counts.
-- **Continue Workshop**: Resume in-progress sessions.
-- **Wizard Mode**: Domain rail + activity view with R/A/C/I selectors, validations, coaching recommendations, and parking lot.
-- **Matrix View**: Grid editing with filters (domain, role, gaps-only) and keyboard navigation.
-- **Inventory**: Applications + OT environment tabs with ownership and contact capture.
-- **Gaps & Actions**: Severity-tagged gap register, one-click action generation.
-- **Executive Pack**: Coverage charts, top gaps/actions, narrative blocks, and downloads (CSV/PDF/HTML).
-- **Admin**: Template mapping settings, role grouping, domain renaming/merge, JSON import/export.
+## Workshop Flow (what the app must do)
+### Phase 0 — Pre-work (15–30 minutes)
+- Import Excel via drag-drop.
+- Choose domains to include for this workshop.
+- Capture metadata: org name, workshop name, date/time, attendees (names + roles), in-scope OT environment notes.
+- Auto-generate agenda and printable participant sheet.
 
-## 6. Architecture
-- **Backend**: FastAPI (Python) with SQLite persistence; Excel ingestion via `openpyxl` with a fallback ZIP/XML parser; reporting/validation services for gaps and actions.
-- **Frontend**: React + Vite (or minimal HTML/JS) with routes for landing dashboard, new workshop, overview, wizard, matrix, inventory, gaps, executive pack, and admin.
-- **Hosting**: Local uvicorn for the API; static build served by FastAPI or another simple HTTP server. Entire experience self-hosted without external services.
+### Phase 1 — Kickoff (10 minutes)
+- Show RACI definitions (from workbook definitions sheet if present).
+- Display rules (e.g., exactly one Accountable per activity) and how decisions/parking lot items are recorded.
+- Confirm scope: included domains, timebox, parking lot rules, attendees.
 
-## 7. Data model (SQLite)
-- `workshops`: id, name, org_name, created_at, source_excel_hash, scope_json
-- `roles`: id, workshop_id, sheet_name, role_name, role_group
-- `domains`: id, workshop_id, sheet_name, domain_name, order_index
-- `activities`: id, workshop_id, sheet_name, domain_id, activity_text, order_index
-- `assignments`: id, workshop_id, activity_id, role_id, raci_value (R/A/C/I), note
-- `decisions`: id, workshop_id, activity_id, decision_note, assumptions, unresolved_flag
-- `inventory_items`: id, workshop_id, sheet_name (APPLICATION Hi-Level / OT Environment Hi-Level), name/function, type, description, responsible_role, accountable_role, consulted_roles, informed_roles, primary_contact, backup_contact
+### Phase 2 — Guided Domain Walkthrough (60–120 minutes)
+For each Domain → Section → Activity:
+- Present activity statement, purpose/context text, and the available roles.
+- Prompt in order: Accountable (force 1 unless marked exception), Responsible (1+ with warnings if above threshold), Consulted, Informed.
+- Capture notes, exceptions, confidence (High/Med/Low), and follow-up owner + due date (creates action item).
+- Controls: Next activity, Back, Park/revisit, Mark not applicable, Mark needs breakout.
+- Always show location: “Domain X of N; Activity Y of Z”.
 
-## 8. Excel ingestion rules
-- **Matrix sheets**: APPLICATIONS RACI, POLICY RACI, INFRASTRUCTURE RACI.
-  - Header row: first row with role names in columns B..N; roles are non-empty header cells.
-  - Domain/section row: text in column A with remaining cells empty → create domain heading.
-  - Activity row: text in column A under current domain → create activity; cells across role columns hold R/A/C/I values (may be blank during workshop).
-- **Inventory sheets**: APPLICATION Hi-Level and OT Environment Hi-Level include fields for name/function, type, description, R/A/C/I roles, and primary/backup contacts. These must map to `inventory_items` and be editable.
+### Phase 3 — Gap Review (20–30 minutes)
+Live generation of:
+- Missing Accountable.
+- Too many Responsibles (configurable threshold).
+- Responsible without Accountable.
+- Activities with no assignments.
+- Cross-domain role overload (same role Responsible everywhere).
+- Orphan activities (in template but never discussed).
 
-## 9. Navigation & pages
-- **Landing Dashboard**: cards for Start New Workshop, Continue Workshop, Workshop Wizard, Gaps & Actions, Executive Pack (Mujib), Admin.
-- **/workshops/new**: Excel upload, workshop naming, scope selection, preview counts.
-- **/workshops/:id/overview**: progress by sheet/domain, unresolved decisions, top gaps.
-- **/workshops/:id/wizard**: domain rail, activity card with R/A/C/I selectors, validation, notes, parking lot, coaching prompts.
-- **/workshops/:id/matrix**: grid edit view with filters and gaps-only mode.
-- **/workshops/:id/inventory**: Applications and OT Environment tabs for ownership/contact capture with missing-contact flags.
-- **/workshops/:id/gaps**: gap register with severity, parking-lot items, and action generation.
-- **/workshops/:id/executive-pack**: coverage charts, narrative blocks, downloads (RACI/gaps/actions CSV, printable HTML/PDF).
-- **/admin**: template mapping, role grouping, domain merge/rename, full backup import/export.
+### Phase 4 — Executive Readout (10–15 minutes)
+Generate:
+- Top findings and gaps (auto-ranked).
+- Action plan (auto from gaps + manual items).
+- Decision log summary.
+- Export pack: PDF + Excel + HTML + CSVs.
 
-## 10. API surface (FastAPI)
-- `POST /api/workshops/from-excel`
-- `GET /api/workshops`
-- `GET /api/workshops/{id}`
-- `GET /api/workshops/{id}/domains`
-- `GET /api/workshops/{id}/roles`
-- `GET /api/workshops/{id}/activities?domain_id=...`
-- `PUT /api/workshops/{id}/assignments` (bulk upsert from wizard/matrix)
-- `POST /api/workshops/{id}/validate`
-- `POST /api/workshops/{id}/actions/generate`
-- `GET /api/workshops/{id}/export/raci.csv`
-- `GET /api/workshops/{id}/export/gaps.csv`
-- `GET /api/workshops/{id}/export/actions.csv`
-- `GET /api/workshops/{id}/executive-pack` (structured JSON + HTML blocks)
+## UX Blueprint
+- **Landing Dashboard**: shows current template, active workshop(s), progress counts, and key buttons: Start Workshop Wizard, Matrix Editor, Review Gaps, Generate Executive Pack, Export.
+- **Wizard Screen**: left rail with domains and completion %, main activity card with R/A/C/I chips and notes/exception areas, bottom controls (Back, Park, Next) and Create Action.
+- **Matrix Editor**: grid with Activities as rows and Roles as columns; cell picker for R/A/C/I; filters for Domain/Section/Role and “show gaps only”; bulk action to copy last activity’s assignments.
+- **Executive Pack Builder**: checkboxes to include matrix, gaps, decisions, actions, heatmap; buttons to Generate PDF, Download Excel, Open HTML report.
+- **Participant View**: simplified read-only view of the current activity, context, and chosen assignments.
+- **Navigation**: `/` dashboard, `/wizard`, `/matrix`, `/pack`; state persisted via `workshop_id` in URL + localStorage. Frontend calls same-origin `/api/*`.
 
-## 11. Coaching & recommendations
-Wizard should propose likely Consulted/Informed roles (e.g., Compliance/Security for Policy activities) and flag governance anti-patterns (missing Consulted on security items, excessive Consulted counts). Recommendations inform, but do not override, facilitator choices.
+## Backend & API (FastAPI + SQLite)
+- Store canonical template and workshops in SQLite; source Excel files in `/uploads`; exports in `/exports`.
+- Endpoints:
+  - `POST /api/templates/import-excel`
+  - `GET /api/templates/{template_id}`
+  - `POST /api/workshops`
+  - `GET /api/workshops/{id}/progress`
+  - `POST /api/workshops/{id}/assignments` (bulk + single)
+  - `GET /api/workshops/{id}/gaps`
+  - `POST /api/workshops/{id}/actions`
+  - `POST /api/workshops/{id}/executive-pack` (returns links to PDF/Excel/HTML)
+  - `GET /api/workshops/{id}/export/excel` (writes back into canonical workbook structure)
 
-## 12. Non-goals
-- Multi-tenant SaaS or third-party integrations in v1.
-- Person-level HR system; focus remains on roles.
-- Real-time collaboration beyond single-facilitator workshop mode.
+## Data Model & Validation
+Tables (SQLite):
+- `templates`: id, source_filename, uploaded_at, template_json, rules_json, source_hash.
+- `workshops`: id, template_id, org_name, name, datetime, attendees_json, scope_json, status.
+- `roles`: id, workshop_id, name, group_label.
+- `domains`: id, workshop_id, name, order_index.
+- `sections`: id, domain_id, name, order_index.
+- `activities`: id, section_id, text, order_index, purpose_text.
+- `assignments`: id, activity_id, role_id, value (R/A/C/I), note, created_by.
+- `decisions`: id, activity_id, note, exception_flag, confidence, parked, needs_breakout.
+- `actions`: id, workshop_id, source_activity_id, title, owner, due_date, status, severity.
+- `gaps`: id, workshop_id, activity_id, gap_type, details, severity.
+- `inventory_items`: id, workshop_id, sheet_name, name_or_function, type, description, responsible_role, accountable_role, consulted_roles, informed_roles, primary_contact, backup_contact.
+
+Validation rules:
+- Exactly one Accountable per activity unless explicitly marked as exception.
+- At least one Responsible (with threshold warning if too many).
+- Optional but prompted Consulted/Informed.
+- Gap detection covers missing A, missing R, R without A, overloaded R roles, and untouched template activities.
+
+## Excel Parsing (pseudocode)
+1. Load workbook via `openpyxl`.
+2. For each matrix sheet (Applications/Policy/Infrastructure):
+   - Identify first row with role names (B..N) → create roles if unique.
+   - Iterate rows:
+     - If column A has text and remaining cells are blank → start new section.
+     - If column A has text under a section → create activity with order index; capture any R/A/C/I letters per role column.
+3. Inventory sheets:
+   - Parse each row into `inventory_items` with ownership fields and primary/backup contacts.
+4. Persist template JSON + extracted counts; store original workbook in `/uploads` with hash for deduping.
+
+## Exports & Executive Pack
+- Per workshop export folder: `Executive-Pack.html`, `Executive-Pack.pdf` (HTML-to-PDF), `RACI-Matrix.xlsx` (same domain layout as source), `Gaps.csv`, `Actions.csv`, `Decisions.csv`.
+- Executive pack narrative includes summary, themes, key decisions, top gaps, action plan, and coverage heatmap.
+
+## Security & Hosting
+- Self-hosted only; no external service calls.
+- Serve static frontend from the FastAPI app with same-origin API calls.
+- Store files locally under `/uploads` and `/exports`; ensure workshop data is scoped per instance.
+
+## Definition of Done
+- Can import the provided workbook and generate a structured template with domains, sections, activities, and roles per the parsing rules.
+- Can create a workshop from the template, run the wizard end-to-end with validations and parking lot handling.
+- Can view and edit assignments in the matrix editor and participant view mirrors the current question.
+- Gap detection surfaces missing Accountable/Responsible, R without A, over-assigned roles, and orphan activities.
+- Can generate actions and decisions from unresolved items.
+- Can generate the executive pack (HTML/PDF), export gaps/actions CSVs, and write assignments back into an Excel matrix with the original layout.
