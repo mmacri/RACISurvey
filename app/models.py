@@ -120,6 +120,7 @@ class Issue(Base):
     workshop = relationship("Workshop", back_populates="issues")
     activity = relationship("Activity", back_populates="issues")
     role = relationship("Role")
+    role = relationship("Role", back_populates="issues")
     actions = relationship("ActionItem", back_populates="issue")
 
 
