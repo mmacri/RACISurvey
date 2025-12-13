@@ -1,47 +1,37 @@
 # Alignment Workshop Engine (AWE)
 
-AWE is a self-hosted, static-first facilitation tool that turns executive discussions into structured accountability, gaps, and decisions. It keeps Excel as the canonical data model and layers guided workflows on top.
+AWE turns a spreadsheet RACI framework into a guided workshop wizard that captures ownership decisions quickly and produces executive-ready outputs. It runs statically (GitHub Pages) with localStorage persistence and can optionally be paired with a lightweight FastAPI backend for durable storage plus Excel/PPTX/PDF exports.
 
-- **Purpose:** align leadership on ownership, accountability, and gaps, with executive-ready outputs.
-- **Modes:** Live Executive Workshop, Async Pre-Work, Post-Workshop Executive Output.
-- **Outputs:** Executive Summary, RACI Matrix (Excel), Gap Register, Decision Log.
-- **Navigation:** Dashboard, Workshops, Frameworks, Live Wizard, Gaps & Conflicts, Reports, Exports, Settings.
+## Why it matters
+- Treats the Excel template as the source of truth—UI is derived from the workbook.
+- Facilitates live sessions with autosave, gap detection, and follow-up creation.
+- Generates an executive pack immediately after the workshop (local mode).
 
-## Getting started
-1. Open `index.html` in a browser (works offline; GitHub Pages friendly).
-2. Use the sidebar to explore each page. The Dashboard CTAs jump directly into the Live Wizard.
-3. Run through the six-step wizard: Select Framework → Define Scope → RACI Assignment → Conflict Resolution → Gap Declaration → Executive Confirmation.
-4. Use the Exports page to download JSON/CSV artifacts that mirror the required outputs. Replace them with real Excel/PDF generators when wiring up a backend.
+## Running the static UI (GitHub Pages ready)
+1. Open `docs/index.html` locally or via GitHub Pages hosting of the `/docs` folder.
+2. Upload the canonical workbook (`DRAFT_OT_RACI_TEMPLATE_v.1 copy.xlsx`) from the landing dashboard.
+3. Start a workshop, map roles, and run the wizard. Data is persisted to `localStorage` (`awe.workshops`).
+4. Export JSON anytime; Excel export is best-effort in-browser, full fidelity via backend.
 
-## Data model (logical)
-- Framework • Control • Role • Workshop • Response • Gap • Decision • ExportLog
-- Excel stays canonical; localStorage stores metadata, responses, and conflicts for demonstration.
+## Running local mode (backend)
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements.txt
+./scripts/run_local.sh
+```
+The API hosts at `http://localhost:8000` and serves export endpoints for JSON, XLSX, PPTX, and PDF.
 
-## Project structure
-- `index.html` — main landing dashboard with navigation and CTA-driven flows.
-- `assets/styles.css` — dark UI theme with executive-friendly cards and wizard layout.
-- `assets/data.js` — sample frameworks, workshops, and helper persistence for localStorage.
-- `assets/app.js` — navigation, dashboard rendering, reports, and export wiring.
-- `assets/wizard.js` — six-step wizard implementation with conflict detection and gap capture.
-- `assets/export.js` — client-side download helpers for executive summary, RACI matrix CSV, gap register, and decision log.
-- `docs/` — UX notes, UI walkthrough, data schema, and demo guidance.
-- `agent.md` — repository guardrails for future updates.
-- `pdi.md` — product definition and implementation outline.
+## Workshop flow
+- **Phase 0** setup: create workshop, attendees, scope, and choose template.
+- **Phase 1–3**: orient with definitions, map role columns, then capture A/R/C/I per activity with live gap checks.
+- **Phase 4** review: heatmap, decisions, actions.
+- **Phase 5** export: JSON always; Excel/PPTX/PDF in local mode.
 
-## Working offline and self-hosting
-- All assets are static; open locally or serve via any web server (e.g., `python -m http.server`).
-- Default persistence is `localStorage`; IndexedDB can be toggled in Settings for heavier use.
-- No external SaaS calls or analytics are included.
+## Key files
+- Frontend: `docs/index.html`, `docs/wizard.html`, `docs/assets/*.js`, `docs/assets/styles.css`
+- Backend: `backend/main.py`, `backend/models.py`, `backend/services/*`
+- Sample data: `/examples/mujib_demo_*`
+- Documentation: `PDI.md`, `DBschema.md`, `UI.md`, `Styles.md`, `dashboards.md`, `reports.md`, `Sampledatademo.md`
 
-## Extending the prototype
-- Swap the sample data in `assets/data.js` with live Excel parsing results.
-- Replace `export.js` download helpers with real Excel/PDF/PowerPoint generation while preserving the canonical workbook.
-- Connect to APIs for audit trails (ExportLog) or to hydrate async pre-work submissions.
-
-## Validation checklist
-- ✅ A CIO can understand this in 2 minutes.
-- ✅ A facilitator can run a workshop with no prep.
-- ✅ Outputs are board-ready and downloadable.
-- ✅ The tool is reusable across frameworks.
-- ✅ Excel remains the canonical source for controls.
-- ✅ Each page explains purpose and next actions.
+## GitHub Pages
+The workflow `.github/workflows/pages.yml` publishes the `/docs` folder on pushes to `main`. All routes use relative paths so the app works at `https://<user>.github.io/<repo>/`.

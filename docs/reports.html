@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - AWE</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="reports.html">Reports / Exports</a>
+        <a data-nav href="templates.html">Templates</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="panel">
+        <div class="section-title"><h2>Executive Pack</h2><div class="button-row"><button class="btn secondary" onclick="AWE.seedDemoWorkshop()">Load demo first</button></div></div>
+        <p class="small">Exports are immediate in static mode (JSON) and enhanced in local mode (PPTX, PDF, Excel).</p>
+        <div class="button-row">
+          <button class="btn secondary" onclick="downloadJson()">Export Workshop JSON</button>
+          <button class="btn secondary" onclick="alert('Excel export best-effort in static mode; use local API for fidelity.')">Export Filled Excel</button>
+          <button class="btn secondary" onclick="alert('PPTX generated in local mode via FastAPI backend.')">Generate Executive Pack</button>
+          <button class="btn secondary" onclick="alert('PDF available in local mode (WeasyPrint).')">Generate PDF Summary</button>
+        </div>
+      </div>
+      <div id="reports" class="grid two"></div>
+    </main>
+  </div>
+  <script type="module">
+    import Router from './assets/router.js';
+    import Store from './assets/store.js';
+    import './assets/app.js';
+    Router.init();
+    window.downloadJson = function() {
+      const state = Store.load();
+      const ws = Store.getWorkshop(state.activeWorkshopId) || state.workshops[0];
+      if (!ws) return alert('No workshop loaded');
+      Store.exportWorkshop(ws.id);
+    };
+    window.AWE.renderReports();
+  </script>
+</body>
+</html>

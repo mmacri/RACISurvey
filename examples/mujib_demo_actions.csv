@@ -1,0 +1,11 @@
+title,owner,due_date,severity,status,related_activity_id
+Follow-up 1,CIO,2024-12-01,critical,open,APPLICATIONS RACI:Activity 1
+Follow-up 2,CTO,2024-12-01,critical,open,APPLICATIONS RACI:Activity 2
+Follow-up 3,PSA Sr Manager,2024-12-01,critical,open,APPLICATIONS RACI:Activity 3
+Follow-up 4,OT Infra & Compliance Manager,2024-12-01,high,open,APPLICATIONS RACI:Activity 4
+Follow-up 5,EMS Ops Owner,2024-12-01,high,open,APPLICATIONS RACI:Activity 5
+Follow-up 6,GIS Owner,2024-12-01,high,open,APPLICATIONS RACI:Activity 6
+Follow-up 7,Security Architect,2024-12-01,high,open,APPLICATIONS RACI:Activity 7
+Follow-up 8,Change Manager,2024-12-01,high,open,APPLICATIONS RACI:Activity 8
+Follow-up 9,CIO,2024-12-01,high,open,APPLICATIONS RACI:Activity 9
+Follow-up 10,CTO,2024-12-01,high,open,APPLICATIONS RACI:Activity 10

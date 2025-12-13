@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard - AWE</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="reports.html">Reports / Exports</a>
+        <a data-nav href="templates.html">Templates</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="status-bar">
+        <div><strong id="wizard-title">Workshop</strong></div>
+        <div class="progress" style="width:220px"><div class="bar" style="width:40%"></div></div>
+        <span class="tag crit">Critical gaps flagged live</span>
+      </div>
+      <div class="grid two">
+        <div class="panel">
+          <h2>Activities</h2>
+          <ul id="activity-list" class="list"></ul>
+        </div>
+        <div id="activity-panel"></div>
+      </div>
+    </main>
+  </div>
+  <script type="module">
+    import Router from './assets/router.js';
+    import './assets/app.js';
+    import Store from './assets/store.js';
+    Router.init();
+    const state = Store.load();
+    if (!state.workshops.length) {
+      alert('No workshop found. Create one first.');
+      window.location.href = 'workshop.html';
+    } else {
+      window.AWE.renderWizard();
+    }
+  </script>
+</body>
+</html>

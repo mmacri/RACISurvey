@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workshops - AWE</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="reports.html">Reports / Exports</a>
+        <a data-nav href="templates.html">Templates</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="panel">
+        <h2>Create Workshop</h2>
+        <div class="grid two">
+          <label>Workshop name<input id="ws-name" placeholder="OT RACI Alignment — Session 01"></label>
+          <label>Customer / Org<input id="ws-org" placeholder="Client name"></label>
+          <label>Sponsor<input id="ws-sponsor" placeholder="Mujib"></label>
+          <label>Date/time<input id="ws-date" type="datetime-local"></label>
+          <label>Mode<select id="ws-mode"><option value="executive">Executive</option><option value="full">Full RACI</option></select></label>
+          <label>Template<select id="ws-template"></select></label>
+        </div>
+        <label>Attendees (comma separated)<textarea id="ws-attendees" placeholder="Name, Title"></textarea></label>
+        <label>Sections to cover<textarea id="ws-scope" placeholder="APPLICATIONS RACI; INFRASTRUCTURE RACI"></textarea></label>
+        <div class="button-row"><button id="create-ws">Create workshop</button></div>
+      </div>
+      <div class="panel">
+        <h2>Saved Workshops</h2>
+        <ul id="ws-list" class="list"></ul>
+      </div>
+    </main>
+  </div>
+  <script type="module">
+    import Store from './assets/store.js';
+    import { demoTemplate } from './assets/templateParser.js';
+    import Router from './assets/router.js';
+    Router.init();
+    const state = Store.load();
+    if (!state.templates.find(t => t.id === 'demo-template')) Store.upsertTemplate(demoTemplate());
+    const templateSelect = document.getElementById('ws-template');
+    Store.load().templates.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = `${t.name} (${t.sections.length} sections)`;
+      templateSelect.appendChild(opt);
+    });
+    document.getElementById('create-ws').onclick = () => {
+      const tmpl = Store.load().templates.find(t => t.id === templateSelect.value);
+      const scope = document.getElementById('ws-scope').value.split(/;|,/).map(s => s.trim()).filter(Boolean);
+      const attendees = document.getElementById('ws-attendees').value.split(/\n|;/).map(row => {
+        const [name, title] = row.split(',').map(x => x?.trim() || '');
+        return name ? { name, title } : null;
+      }).filter(Boolean);
+      const ws = Store.createWorkshop({
+        name: document.getElementById('ws-name').value || 'OT RACI Alignment',
+        org: document.getElementById('ws-org').value,
+        sponsor: document.getElementById('ws-sponsor').value,
+        template_id: tmpl?.id,
+        scope: scope.length ? scope : tmpl?.sections?.map(s => s.name),
+        attendees,
+        mode: document.getElementById('ws-mode').value,
+        role_map: {}
+      });
+      alert('Workshop created');
+      window.location.href = 'wizard.html';
+    };
+    const list = document.getElementById('ws-list');
+    const workshops = Store.listWorkshops();
+    list.innerHTML = workshops.map(w => `<li><div class="label-row"><strong>${w.name}</strong><span class="small">${w.updated_at}</span></div><div class="small">${w.org} • ${w.mode}</div><div class="button-row"><a class="btn secondary" href="wizard.html" onclick="localStorage.setItem('awe.activeWorkshop','${w.id}')">Open</a><button class="btn secondary" onclick="Store.exportWorkshop('${w.id}')">Export JSON</button></div></li>`).join('');
+  </script>
+</body>
+</html>
