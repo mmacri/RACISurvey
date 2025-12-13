@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="review.html">Review</a>
+        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="README.md">Help</a>
+      </nav>
+    </aside>
+    <div>
+      <header class="header">
+        <div class="badge-row">
+          <div class="badge" id="workshop-badge">Template tools</div>
+          <div class="badge warn" id="mode-badge">Static</div>
+        </div>
+        <label class="btn secondary" style="cursor:pointer;">Upload Excel<input type="file" id="template-upload" accept=".xlsx" style="display:none"></label>
+      </header>
+      <main class="main page">
+        <section class="card">
+          <div class="panel-title"><h2>Imported templates</h2><span class="small">Excel is canonical</span></div>
+          <div id="templates" class="grid two"></div>
+        </section>
+        <section class="card">
+          <div class="panel-title"><h3>Preview</h3><span class="small">Domains, roles, activities</span></div>
+          <div class="grid three">
+            <div>
+              <h4>Domains</h4>
+              <ul id="preview-domains"></ul>
+            </div>
+            <div>
+              <h4>Roles</h4>
+              <ul id="preview-roles"></ul>
+            </div>
+            <div>
+              <h4>Activities</h4>
+              <ul id="preview-activities"></ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script type="module">
+    import store from './assets/store.js';
+    import { handleExcelUpload } from './assets/excel.js';
+    import { markNav } from './assets/router.js';
+    const listEl = document.getElementById('templates');
+    const domainsEl = document.getElementById('preview-domains');
+    const rolesEl = document.getElementById('preview-roles');
+    const actsEl = document.getElementById('preview-activities');
+    function render() {
+      const tpls = store.listTemplates();
+      listEl.innerHTML = tpls.length ? tpls.map(t => `<div class="card"><div class="panel-title"><strong>${t.name}</strong><span class="small">${t.metadata?.importedAt||''}</span></div><div class="small">${t.domains?.length||0} domains · ${t.roles?.length||0} roles · ${t.activities?.length||0} activities</div><button data-preview="${t.id}" class="secondary">Preview</button></div>`).join('') : '<div class="small">No templates yet. Upload an Excel file.</div>';
+      listEl.querySelectorAll('button[data-preview]')?.forEach(btn => btn.onclick = () => show(btn.dataset.preview));
+    }
+    function show(id) {
+      const tpl = store.getTemplate(id);
+      if (!tpl) return;
+      domainsEl.innerHTML = tpl.domains.map(d => `<li>${d.name||d.id}</li>`).join('');
+      rolesEl.innerHTML = tpl.roles.map(r => `<li>${r}</li>`).join('');
+      actsEl.innerHTML = tpl.activities.slice(0,50).map(a => `<li>${a.domain}: ${a.name}</li>`).join('');
+    }
+    document.getElementById('template-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const tmpl = await handleExcelUpload(file);
+      render(); show(tmpl.id);
+    });
+    markNav('templates');
+    render();
+  </script>
+</body>
+</html>

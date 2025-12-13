@@ -1,193 +1,141 @@
-// app.js
-// Core UI interactions for the Alignment Workshop Engine dashboard and supporting views.
-// Keeps logic intentionally simple so facilitators can run workshops without prior setup.
+import store from './store.js';
+import { handleExcelUpload } from './excel.js';
+import { markNav } from './router.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const views = document.querySelectorAll('.view');
-  const navItems = document.querySelectorAll('#nav-items li');
+function qs(id) { return document.querySelector(id); }
+function renderWorkshopBadge() {
+  const badge = qs('#workshop-badge');
+  const current = store.currentWorkshop();
+  badge.textContent = current ? `${current.name} • ${current.workshopDate}` : 'No workshop selected';
+}
 
-  navItems.forEach((item) => {
-    item.addEventListener('click', () => {
-      const target = item.dataset.target;
-      views.forEach((view) => view.classList.remove('active'));
-      navItems.forEach((n) => n.classList.remove('active'));
-      document.getElementById(target).classList.add('active');
-      item.classList.add('active');
-      if (target === 'wizard') {
-        launchWizard();
-      }
+function renderMode() {
+  const badge = qs('#mode-badge');
+  badge.textContent = store.state.apiBase ? 'Backend' : 'Static';
+  badge.classList.toggle('warn', !!store.state.apiBase);
+}
+
+function renderProgress() {
+  const container = qs('#progress-steps');
+  const steps = ['Setup','Scope','Roles','Activities','RACI Decisions','Review','Executive Pack'];
+  const current = store.currentWorkshop();
+  const stepIndex = current?.wizardStep || 1;
+  const pct = Math.round(((stepIndex-1)/(steps.length-1))*100);
+  qs('#progress-pct').textContent = `${pct}% ready`;
+  container.innerHTML = steps.map((step, idx) => {
+    const status = idx+1 < stepIndex ? 'complete' : idx+1 === stepIndex ? 'active' : '';
+    const warn = !current && idx>0 ? '<div class="small">Start a workshop</div>' : '';
+    return `<div class="step-item ${status}"><div class="step-label">${step}<span class="small">${idx+1}/${steps.length}</span></div>${warn}</div>`;
+  }).join('');
+  const missing = qs('#missing');
+  if (!current) missing.textContent = 'You need to create or load a workshop to begin.';
+  else missing.textContent = `Next: ${steps[stepIndex-1]} step.`;
+}
+
+function renderResume() {
+  const list = qs('#resume-list');
+  const workshops = store.listWorkshops();
+  list.innerHTML = workshops.length ? workshops.map(w => `<li><div class="flex between"><div><strong>${w.name}</strong><div class="small">${w.org} • ${w.workshopDate}</div></div><button data-resume="${w.id}">Open</button></div></li>`).join('') : '<li class="small">No saved workshops yet.</li>';
+  list.querySelectorAll('button[data-resume]')?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      store.setCurrentWorkshop(btn.dataset.resume);
+      window.location.href = 'wizard.html';
     });
   });
-
-  // CTA shortcuts
-  document.getElementById('start-workshop').addEventListener('click', () => {
-    openWizardWithContext('Live');
-  });
-  document.getElementById('resume-workshop').addEventListener('click', () => {
-    openWizardWithContext('Resume');
-  });
-  document.getElementById('async-collection').addEventListener('click', () => {
-    openWizardWithContext('Async');
-  });
-  document.getElementById('generate-pack').addEventListener('click', () => {
-    document.getElementById('exports').classList.add('active');
-    views.forEach((view) => {
-      if (view.id !== 'exports') view.classList.remove('active');
-    });
-    navItems.forEach((n) => n.classList.remove('active'));
-    document.querySelector('#nav-items li[data-target="exports"]').classList.add('active');
-  });
-
-  renderWorkshopCards();
-  renderWorkshopList();
-  renderFrameworks();
-  renderGaps();
-  renderReports();
-  attachExportHandlers();
-});
-
-function renderWorkshopCards() {
-  const container = document.getElementById('workshop-cards');
-  const workshops = Storage.load('awe.workshops', sampleWorkshops);
-  container.innerHTML = '';
-  workshops.forEach((workshop) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <h3>${workshop.name}</h3>
-      <p>${workshop.framework}</p>
-      <div class="progress-bar"><span style="width:${workshop.completion}%"></span></div>
-      <p><strong>${workshop.completion}%</strong> complete</p>
-      <p>Open gaps: ${workshop.openGaps} • Unassigned: ${workshop.unassignedOwners}</p>
-      <div class="status-pill ${workshop.readiness}">${workshop.readiness.toUpperCase()}</div>
-      <p class="helper">Readiness status drives what to do next: resolve conflicts or capture gaps.</p>
-    `;
-    card.addEventListener('click', () => openWizardWithContext('Resume', workshop));
-    container.appendChild(card);
-  });
 }
 
-function renderWorkshopList() {
-  const container = document.getElementById('workshop-list');
-  const workshops = Storage.load('awe.workshops', sampleWorkshops);
-  container.innerHTML = '';
-  workshops.forEach((workshop) => {
-    const panel = document.createElement('div');
-    panel.className = 'panel';
-    panel.innerHTML = `
-      <div class="status-pill ${workshop.readiness}">${workshop.mode} • ${workshop.readiness.toUpperCase()}</div>
-      <h3>${workshop.name}</h3>
-      <p>${workshop.framework}</p>
-      <p>${workshop.completion}% complete • ${workshop.openGaps} gaps open • ${workshop.unassignedOwners} owners needed</p>
-      <p class="helper">${workshop.lastAction}</p>
-      <div class="step-actions">
-        <button class="secondary" aria-label="Resume ${workshop.name}">Resume</button>
-        <button class="ghost" aria-label="Export ${workshop.name}">Export</button>
-      </div>
-    `;
-    panel.querySelector('button.secondary').addEventListener('click', () => openWizardWithContext('Resume', workshop));
-    panel.querySelector('button.ghost').addEventListener('click', () => openExports());
-    container.appendChild(panel);
+function bindActions() {
+  qs('#new-workshop').addEventListener('click', () => {
+    qs('#workshop-modal').classList.add('active');
   });
-}
-
-function renderFrameworks() {
-  const container = document.getElementById('framework-list');
-  container.innerHTML = '';
-  sampleFrameworks.forEach((fw) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="status-pill ${fw.readiness}">${fw.readiness.toUpperCase()}</div>
-      <h3>${fw.name}</h3>
-      <p>${fw.description}</p>
-      <p class="helper">Controls: ${fw.controls.length} • Excel rows preserved.</p>
-      <button class="secondary">Use Framework</button>
-    `;
-    card.querySelector('button').addEventListener('click', () => openWizardWithContext('Live', { framework: fw.name }));
-    container.appendChild(card);
-  });
-}
-
-function renderGaps() {
-  const container = document.getElementById('gaps-container');
-  container.innerHTML = '';
-  const gaps = Storage.load('awe.gaps', sampleGaps);
-  gaps.forEach((gap) => {
-    const item = document.createElement('div');
-    item.className = 'list-item';
-    item.innerHTML = `
-      <div>
-        <strong>${gap.control}</strong>
-        <span>${gap.type} • Risk: ${gap.risk}</span><br />
-        <span>Proposed owner: ${gap.proposedOwner}</span><br />
-        <span>Target state: ${gap.targetState}</span>
-      </div>
-      <div class="status-pill yellow">${gap.status}</div>
-    `;
-    container.appendChild(item);
-  });
-}
-
-function renderReports() {
-  const container = document.getElementById('report-cards');
-  container.innerHTML = '';
-  const workshops = Storage.load('awe.workshops', sampleWorkshops);
-  const completion = Math.round(workshops.reduce((sum, w) => sum + w.completion, 0) / workshops.length);
-
-  const reports = [
-    {
-      title: 'Executive Summary',
-      description: 'What is aligned, what is unclear, what is risky, and what is pending decisions.',
-      bullets: ['Completion: ' + completion + '%', 'Open gaps: ' + sampleGaps.length, 'Decisions captured: ' + sampleDecisions.length]
-    },
-    {
-      title: 'Conflict Heatmap',
-      description: 'Highlights multiple Accountables, missing owners, and low-confidence rows.',
-      bullets: ['Multiple A: 2 controls', 'No A: 1 control', 'Low confidence: 3 rows']
-    },
-    {
-      title: 'Gap Register',
-      description: 'Severity-ranked list of remediation items with proposed owners and target states.',
-      bullets: sampleGaps.map((g) => `${g.control} → ${g.proposedOwner} (${g.risk})`)
-    },
-    {
-      title: 'Decision Log',
-      description: 'Timestamped decisions with who decided and confidence levels.',
-      bullets: sampleDecisions.map((d) => `${d.control}: ${d.decision} (${d.by})`)
+  qs('#close-modal').addEventListener('click', () => qs('#workshop-modal').classList.remove('active'));
+  qs('#workshop-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target).entries());
+    if (!data.templateId) {
+      alert('Choose a template first (import on Templates page or load demo).');
+      return;
     }
-  ];
-
-  reports.forEach((report) => {
-    const card = document.createElement('div');
-    card.className = 'card report-card';
-    card.innerHTML = `
-      <h3>${report.title}</h3>
-      <p>${report.description}</p>
-      <ul>${report.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
-    `;
-    container.appendChild(card);
+    const ws = store.createWorkshop({
+      name: data.name,
+      org: data.org,
+      sponsor: data.sponsor,
+      mode: data.mode,
+      templateId: data.templateId,
+      attendees: data.attendees ? data.attendees.split(',').map(v => v.trim()).filter(Boolean) : [],
+    });
+    store.setCurrentWorkshop(ws.id);
+    window.location.href = 'wizard.html';
   });
+  qs('#excel-upload').addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const tmpl = await handleExcelUpload(file);
+    populateTemplateSelect();
+    alert(`Template imported: ${tmpl.name}`);
+  });
+  const modalUpload = document.getElementById('excel-upload-modal');
+  if (modalUpload) {
+    modalUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const tmpl = await handleExcelUpload(file);
+      populateTemplateSelect();
+      alert(`Template imported: ${tmpl.name}`);
+    });
+  }
+  qs('#quick-import').addEventListener('click', () => qs('#excel-upload').click());
+  qs('#load-demo').addEventListener('click', loadDemo);
+  qs('#export-json').addEventListener('click', () => {
+    const current = store.currentWorkshop();
+    if (!current) return alert('Create or load a workshop first.');
+    const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${current.name || 'workshop'}.json`;
+    a.click();
+  });
+  qs('#go-wizard').addEventListener('click', () => window.location.href = 'wizard.html');
+  qs('#go-review').addEventListener('click', () => window.location.href = 'review.html');
+  qs('#go-reports').addEventListener('click', () => window.location.href = 'reports.html');
 }
 
-function openWizardWithContext(mode, workshop = null) {
-  document.getElementById('wizard').classList.add('active');
-  document.getElementById('dashboard').classList.remove('active');
-  document.querySelectorAll('#nav-items li').forEach((n) => n.classList.remove('active'));
-  document.querySelector('#nav-items li[data-target="wizard"]').classList.add('active');
-  launchWizard(mode, workshop);
+async function loadDemo() {
+  const res = await fetch('data/demo_mujib.json');
+  const data = await res.json();
+  store.loadDemo(data);
+  populateTemplateSelect();
+  renderWorkshopBadge();
+  renderResume();
+  renderProgress();
+  alert('Mujib demo loaded. Open the wizard to explore.');
 }
 
-function openExports() {
-  document.getElementById('exports').classList.add('active');
-  document.querySelectorAll('.view').forEach((view) => { if (view.id !== 'exports') view.classList.remove('active'); });
-  document.querySelectorAll('#nav-items li').forEach((n) => n.classList.remove('active'));
-  document.querySelector('#nav-items li[data-target="exports"]').classList.add('active');
+function populateTemplateSelect() {
+  const select = qs('#template-select');
+  select.innerHTML = '<option value="">Select imported template</option>' + store.listTemplates().map(t => `<option value="${t.id}">${t.name}</option>`).join('');
 }
 
-function attachExportHandlers() {
-  document.getElementById('download-summary').addEventListener('click', () => exportExecutiveSummary());
-  document.getElementById('download-raci').addEventListener('click', () => exportRaciMatrix());
-  document.getElementById('download-gaps').addEventListener('click', () => exportGapRegister());
-  document.getElementById('download-decisions').addEventListener('click', () => exportDecisionLog());
+function renderQuickPreview() {
+  const items = [
+    { title: 'RACI Matrix', desc: 'Final ownership map with highlights.' },
+    { title: 'Gap List', desc: 'Auto-detected missing A/R or overloaded roles.' },
+    { title: 'Action Plan', desc: 'Follow-ups with owners and due dates.' },
+    { title: 'Executive Summary', desc: 'Narrative context for leadership.' },
+  ];
+  qs('#preview').innerHTML = items.map(i => `<div class="preview-card"><strong>${i.title}</strong><div class="small">${i.desc}</div></div>`).join('');
 }
+
+function init() {
+  markNav('index');
+  renderWorkshopBadge();
+  renderMode();
+  renderResume();
+  renderProgress();
+  populateTemplateSelect();
+  renderQuickPreview();
+  bindActions();
+  if (window.location.hash === '#new') {
+    qs('#workshop-modal').classList.add('active');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', init);

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWE Review</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="review.html">Review</a>
+        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="README.md">Help</a>
+      </nav>
+    </aside>
+    <div>
+      <header class="header">
+        <div class="badge-row">
+          <div class="badge" id="workshop-badge">Workshop</div>
+          <div class="badge warn" id="mode-badge">Static</div>
+        </div>
+        <button id="fix">Go back to wizard to fix</button>
+      </header>
+      <main class="main page">
+        <section class="card">
+          <div class="panel-title"><h2>Heatmap</h2><span class="small">Activities by domain</span></div>
+          <div id="heatmap" class="heatmap"></div>
+        </section>
+        <section class="grid two">
+          <div class="card">
+            <div class="panel-title"><h3>Top gaps</h3></div>
+            <ul id="gaps"></ul>
+          </div>
+          <div class="card">
+            <div class="panel-title"><h3>Ambiguity hotspots</h3></div>
+            <ul id="ambiguity"></ul>
+          </div>
+        </section>
+        <section class="grid two">
+          <div class="card stat"><span class="small">Ownership clarity score</span><strong id="ownership-score">0%</strong></div>
+          <div class="card stat"><span class="small">Completeness score</span><strong id="completeness-score">0%</strong></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="vendor/chart.umd.min.js"></script>
+  <script type="module" src="assets/review.js"></script>
+</body>
+</html>

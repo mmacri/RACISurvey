@@ -1,0 +1,31 @@
+@import url('theme.css');
+
+.app-shell { display: grid; grid-template-columns: var(--nav-width) 1fr; min-height: 100vh; }
+.page { padding: 0 24px 32px 24px; }
+.hero { display: grid; grid-template-columns: 2fr 1.2fr; gap: 16px; align-items: stretch; }
+.hero .card { height: 100%; }
+
+.quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.quick-actions button, .quick-actions label { width: 100%; text-align: left; }
+
+.step-tracker { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.step-item { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: rgba(56,189,248,0.04); }
+
+.resume-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.resume-list li { border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 99; }
+.modal.active { display: flex; }
+.modal .dialog { width: min(620px, 90vw); background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+
+.wizard-layout { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
+
+.timeline { display: grid; gap: 12px; }
+.issue-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: rgba(248,113,113,0.08); }
+
+.heatmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.heatmap .cell { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: rgba(56,189,248,0.05); }
+
+.badge-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.preview-grid a { color: inherit; display: block; }
