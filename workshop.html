@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workshops</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="review.html">Review</a>
+        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="README.md">Help</a>
+      </nav>
+    </aside>
+    <div>
+      <header class="header">
+        <div class="badge-row">
+          <div class="badge" id="workshop-badge">Workshops</div>
+          <div class="badge warn" id="mode-badge">Static</div>
+        </div>
+        <button id="create">New workshop</button>
+      </header>
+      <main class="main page">
+        <section class="card">
+          <div class="panel-title"><h2>Saved workshops</h2><span class="small">Autosaved to localStorage</span></div>
+          <table class="table">
+            <thead><tr><th>Name</th><th>Org</th><th>Sponsor</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="list"></tbody>
+          </table>
+        </section>
+        <section class="card">
+          <div class="panel-title"><h3>Reset demo data</h3></div>
+          <button id="reset">Reset demo data</button>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script type="module">
+    import store from './assets/store.js';
+    import { markNav } from './assets/router.js';
+    markNav('workshop');
+    const list = document.getElementById('list');
+    function render() {
+      const rows = store.listWorkshops();
+      list.innerHTML = rows.length ? rows.map(w => `<tr><td>${w.name}</td><td>${w.org}</td><td>${w.sponsor}</td><td>${w.status}</td><td><button data-open="${w.id}">Open</button></td></tr>`).join('') : '<tr><td colspan="5" class="small">No workshops yet.</td></tr>';
+      list.querySelectorAll('button[data-open]')?.forEach(btn => btn.onclick = () => { store.setCurrentWorkshop(btn.dataset.open); window.location.href = 'wizard.html'; });
+    }
+    document.getElementById('create').onclick = () => window.location.href = 'index.html#new';
+    document.getElementById('reset').onclick = async () => {
+      const res = await fetch('data/demo_mujib.json');
+      const data = await res.json();
+      store.loadDemo(data);
+      render();
+    };
+    render();
+  </script>
+</body>
+</html>

@@ -1,205 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alignment Workshop Engine (AWE)</title>
-  <link rel="stylesheet" href="assets/styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alignment Workshop Engine - Dashboard</title>
+  <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside id="sidebar">
-      <div class="brand">
-        <h1>AWE</h1>
-        <p>Alignment Workshop Engine</p>
-      </div>
-      <p class="helper">Self-hosted, Excel-first workshop companion that turns executive discussion into accountable outcomes.</p>
-      <ul id="nav-items">
-        <li class="active" data-target="dashboard">Dashboard</li>
-        <li data-target="workshops">Workshops</li>
-        <li data-target="frameworks">Frameworks</li>
-        <li data-target="wizard">Live Wizard</li>
-        <li data-target="gaps">Gaps &amp; Conflicts</li>
-        <li data-target="reports">Reports</li>
-        <li data-target="exports">Exports</li>
-        <li data-target="settings">Settings</li>
-      </ul>
-      <div class="sidebar-note">
-        <strong>Excel stays canonical.</strong>
-        <p>Only deltas, metadata, and history are stored locally; the workbook remains the source of truth.</p>
-      </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="review.html">Review</a>
+        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="README.md">Help</a>
+      </nav>
     </aside>
+    <div>
+      <header class="header">
+        <div class="badge-row">
+          <div class="badge" id="workshop-badge">No workshop selected</div>
+          <div class="badge warn" id="mode-badge">Static</div>
+        </div>
+        <button id="go-wizard">Open Wizard</button>
+      </header>
+      <main class="main page">
+        <section class="hero">
+          <div class="card">
+            <div class="panel-title"><h2>Start a Workshop</h2><span class="small">Dashboard → Wizard flow</span></div>
+            <div class="row" style="margin-bottom:12px;">
+              <button id="new-workshop">New workshop</button>
+              <button class="secondary" id="go-review">Review</button>
+              <button class="secondary" id="go-reports">Executive Pack</button>
+            </div>
+            <div>
+              <div class="panel-title"><h3>Resume workshop</h3><span class="small">Autosaved locally</span></div>
+              <ul class="resume-list" id="resume-list"></ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="panel-title"><h2>Workshop Progress</h2><span class="badge" id="progress-pct">0%</span></div>
+            <div id="progress-steps" class="step-tracker"></div>
+            <div class="callout warn" id="missing">What's missing shows here.</div>
+          </div>
+        </section>
 
-    <main id="content">
-      <section id="dashboard" class="view active">
-        <header class="banner">
-          <div>
-            <p class="eyebrow">Purpose</p>
-            <h2>This tool exists to align leadership on ownership, accountability, and gaps — and produce executive-ready outputs.</h2>
-            <p>Use it live in the room, during async pre-work, or to generate post-workshop exports without touching the canonical Excel layout.</p>
+        <section class="card">
+          <div class="panel-title"><h2>Quick Actions</h2><span class="small">Static-first, exports ready</span></div>
+          <div class="quick-actions">
+            <button id="quick-import">Import Excel Template</button>
+            <input type="file" id="excel-upload" accept=".xlsx" style="display:none" />
+            <button id="load-demo">Load Mujib demo</button>
+            <button id="export-json">Export current state JSON</button>
+            <button id="go-reports">Generate executive pack</button>
           </div>
-          <div class="cta-stack">
-            <button id="start-workshop" class="primary">Start New Workshop</button>
-            <button id="resume-workshop" class="secondary">Resume Workshop</button>
-            <button id="async-collection" class="ghost">Run Async Collection</button>
-            <button id="generate-pack" class="secondary">Generate Executive Pack</button>
-          </div>
-        </header>
+        </section>
 
-        <div class="grid two">
-          <div class="panel">
-            <h3>What to expect</h3>
-            <p>The live wizard walks through framework selection, scope, RACI assignment, conflict resolution, gap declaration, and executive confirmation. Every step enforces clarity and flags ambiguity.</p>
-            <ul>
-              <li>Live Executive Workshop — facilitator-driven with explicit decisions.</li>
-              <li>Async Pre-Work — collect inputs independently and surface conflicts.</li>
-              <li>Post-Workshop — export executive summary, RACI matrix, gap register, and decision log.</li>
-            </ul>
-          </div>
-          <div class="panel">
-            <h3>Readiness checklist</h3>
-            <p>Designed so a CIO understands value in two minutes and a facilitator can run with zero prep.</p>
-            <ul>
-              <li>Navigation is fixed: Dashboard, Workshops, Frameworks, Live Wizard, Gaps &amp; Conflicts, Reports, Exports, Settings.</li>
-              <li>Every view states what it is, why it matters, and the next action.</li>
-              <li>Outputs are board-ready and reusable across NERC CIP, NIST, ISO, SOX, AI governance, OT, and cloud controls.</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="section-header">
-          <h3>Workshop status</h3>
-          <p>Each card shows the framework, completion, open gaps, unassigned owners, and readiness status. Click to continue the live wizard.</p>
-        </div>
-        <div id="workshop-cards" class="card-grid"></div>
-      </section>
-
-      <section id="workshops" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Workshops</p>
-            <h2>Manage active and upcoming workshops</h2>
-            <p>Use this list to resume, export, or launch new sessions. Empty states still explain how to begin.</p>
-          </div>
-          <button class="primary" onclick="openWizardWithContext('Live')">New Workshop</button>
-        </div>
-        <div id="workshop-list" class="stack"></div>
-      </section>
-
-      <section id="frameworks" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Frameworks</p>
-            <h2>Excel-backed templates you can trust</h2>
-            <p>Choose the canonical workbook, keep its structure intact, and reuse it across governance models without schema rewrites.</p>
-          </div>
-        </div>
-        <div id="framework-list" class="card-grid"></div>
-      </section>
-
-      <section id="wizard" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Live Wizard</p>
-            <h2>Six-step guided workshop flow</h2>
-            <p>Built for facilitator-led sessions with no dead ends: select framework, define scope, assign RACI, resolve conflicts, declare gaps, and confirm with executives.</p>
-          </div>
-          <div class="wizard-meta">
-            <span class="status-pill green">Excel-first</span>
-            <span class="status-pill blue">Offline-ready</span>
-          </div>
-        </div>
-        <div class="wizard-shell">
-          <div class="wizard-progress">Progress: <span id="wizard-progress">Step 1 of 6</span></div>
-          <div id="wizard-body" aria-live="polite"></div>
-        </div>
-      </section>
-
-      <section id="gaps" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Gaps &amp; Conflicts</p>
-            <h2>Ambiguity is captured, not ignored</h2>
-            <p>Multiple Accountables, missing owners, low confidence, and role disagreements are highlighted here with proposed owners and target states.</p>
-          </div>
-        </div>
-        <div id="gaps-container" class="stack"></div>
-      </section>
-
-      <section id="reports" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Reports</p>
-            <h2>Executive-ready summaries</h2>
-            <p>See completion, conflicts, and decision highlights at a glance. Use these cards to prep leadership and steer next actions.</p>
-          </div>
-        </div>
-        <div id="report-cards" class="card-grid"></div>
-      </section>
-
-      <section id="exports" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Exports</p>
-            <h2>One-click executive outputs</h2>
-            <p>Download the executive summary, RACI matrix (Excel-friendly CSV), gap register, and decision log. Workbook structure is preserved for round-tripping.</p>
-          </div>
-        </div>
-        <div class="grid two">
-          <div class="panel">
-            <h3>Executive Summary</h3>
-            <p>What is aligned, unclear, risky, and pending decisions.</p>
-            <button id="download-summary" class="secondary">Download Summary</button>
-          </div>
-          <div class="panel">
-            <h3>RACI Matrix</h3>
-            <p>Preserves control identifiers and headers while appending workshop metadata.</p>
-            <button id="download-raci" class="secondary">Download RACI CSV</button>
-          </div>
-          <div class="panel">
-            <h3>Gap Register</h3>
-            <p>Severity-ranked list of remediation items with proposed owners and target states.</p>
-            <button id="download-gaps" class="secondary">Download Gaps</button>
-          </div>
-          <div class="panel">
-            <h3>Decision Log</h3>
-            <p>Timestamped decisions with who decided and confidence levels.</p>
-            <button id="download-decisions" class="secondary">Download Decisions</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="settings" class="view">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Settings</p>
-            <h2>Facilitation and storage preferences</h2>
-            <p>Control where data is stored and how the facilitator experience behaves. Defaults favor offline, Excel-first use.</p>
-          </div>
-        </div>
-        <div class="stack">
-          <div class="panel">
-            <h3>Storage mode</h3>
-            <p>LocalStorage by default; swap to IndexedDB if sessions are longer or datasets are heavier.</p>
-            <label><input type="radio" name="storage" checked /> LocalStorage (default)</label><br />
-            <label><input type="radio" name="storage" /> IndexedDB (optional)</label>
-          </div>
-          <div class="panel">
-            <h3>Facilitator preferences</h3>
-            <ul>
-              <li>Show conflict banners when Accountable is missing or duplicated.</li>
-              <li>Require acknowledgment for low-confidence or "Unsure" toggles before export.</li>
-              <li>Display parking-lot items with owner and target state.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-    </main>
+        <section class="card">
+          <div class="panel-title"><h2>What you get at the end</h2><span class="small">Preview</span></div>
+          <div id="preview" class="preview-grid"></div>
+        </section>
+      </main>
+    </div>
   </div>
 
-  <script src="assets/data.js"></script>
-  <script src="assets/export.js"></script>
-  <script src="assets/wizard.js"></script>
-  <script src="assets/app.js"></script>
+  <div class="modal" id="workshop-modal">
+    <div class="dialog">
+      <div class="panel-title"><h3>Workshop setup</h3><button class="secondary" id="close-modal">Close</button></div>
+      <form id="workshop-form" class="grid two">
+        <label>Name<input name="name" required placeholder="OT Leadership Alignment"></label>
+        <label>Organization<input name="org" required placeholder="Org or Customer"></label>
+        <label>Sponsor<input name="sponsor" placeholder="Mujib"></label>
+        <label>Mode<select name="mode"><option>Executive</option><option>Full</option></select></label>
+        <label>Attendees (comma separated)<input name="attendees" placeholder="CIO, CTO, OT Lead"></label>
+        <label>Template<select name="templateId" id="template-select" required></select></label>
+        <div class="grid two" style="grid-column:1/-1; gap:10px;">
+          <button type="submit">Create & open wizard</button>
+          <label class="btn secondary" style="text-align:center; cursor:pointer;">Import Excel<input type="file" accept=".xlsx" style="display:none" id="excel-upload-modal"></label>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script type="module" src="assets/app.js"></script>
 </body>
 </html>
