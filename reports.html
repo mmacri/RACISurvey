@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Pack</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="review.html">Review</a>
+        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="README.md">Help</a>
+      </nav>
+    </aside>
+    <div>
+      <header class="header">
+        <div class="badge-row">
+          <div class="badge" id="workshop-badge">Workshop</div>
+          <div class="badge warn" id="mode-badge">Static</div>
+        </div>
+        <div class="badge">Exports ready</div>
+      </header>
+      <main class="main page">
+        <section class="grid two">
+          <div class="card">
+            <div class="panel-title"><h3>Static mode exports</h3><span class="small">Always available</span></div>
+            <div class="grid">
+              <button id="export-json-btn">Export Workshop JSON</button>
+              <button id="export-csv-btn">Export raci.csv / gaps.csv / actions.csv</button>
+              <button id="export-excel-btn">Export filled Excel</button>
+              <button id="exec-summary">Open executive summary</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="panel-title"><h3>Backend mode exports</h3><span class="small">Requires API base</span></div>
+            <div class="grid">
+              <button id="export-pptx">Generate PPTX (backend)</button>
+              <button id="export-pdf">Generate PDF (backend)</button>
+              <div class="callout warn">Set <code>apiBase</code> in localStorage to enable.</div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="panel-title"><h3>Executive Summary</h3><span class="small">Printable</span></div>
+          <div id="executive" class="grid"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script type="module" src="assets/reports.js"></script>
+</body>
+</html>

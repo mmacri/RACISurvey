@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWE Wizard</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="review.html">Review</a>
+        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="README.md">Help</a>
+      </nav>
+    </aside>
+    <div>
+      <header class="header">
+        <div>
+          <div class="badge" id="current-workshop">Workshop</div>
+          <div class="badge warn" id="mode-badge">Static</div>
+        </div>
+        <div class="badge" id="step-name">Step</div>
+      </header>
+      <main class="main page wizard-layout">
+        <div class="stepper">
+          <ol id="stepper"></ol>
+          <div class="row" style="margin-top:12px;">
+            <button class="secondary" id="back">Back</button>
+            <button class="secondary" id="park">Park for later</button>
+            <button id="next">Next</button>
+          </div>
+        </div>
+        <div class="grid" style="gap:16px;">
+          <section class="card">
+            <div class="panel-title"><h3>1. Workshop Setup</h3><span class="small">Name, org, sponsor, template</span></div>
+            <form id="setup-form" class="grid two">
+              <label>Name<input name="name" required></label>
+              <label>Organization<input name="org" required></label>
+              <label>Sponsor<input name="sponsor" placeholder="Mujib"></label>
+              <label>Mode<select name="mode"><option>Executive</option><option>Full</option></select></label>
+              <label>Date<input type="date" name="workshopDate"></label>
+              <div class="callout">Template in use: <span id="template-name"></span></div>
+            </form>
+          </section>
+
+          <section class="card">
+            <div class="panel-title"><h3>2. Scope & Sections</h3><span class="small">Domains + goals</span></div>
+            <div class="grid two">
+              <div>
+                <h4>Domains</h4>
+                <div id="domain-list" class="grid"></div>
+              </div>
+              <div>
+                <h4>Workshop goals</h4>
+                <div id="goals" class="grid"></div>
+                <label>Timebox per domain<input type="range" min="15" max="60" value="30" oninput="this.nextElementSibling.textContent=this.value+' minutes'"/><div class="small">30 minutes</div></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="panel-title"><h3>3. Role Mapping</h3><span class="small">Map template roles to attendees</span></div>
+            <div class="table-scroll">
+              <table class="table" id="roles">
+                <thead><tr><th>Role</th><th>Person</th><th>Notes</th></tr></thead>
+                <tbody id="roles-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="panel-title"><h3>4. Activities Review</h3><span class="small">Hide/defer or add</span></div>
+            <div class="row"><button class="secondary" id="add-activity">Add activity</button></div>
+            <div id="activities" class="grid"></div>
+          </section>
+
+          <section class="card">
+            <div class="panel-title"><h3>5. RACI Decisions</h3><span class="small">Click cells to cycle R/A/C/I</span></div>
+            <div class="table-scroll">
+              <table class="matrix" id="matrix"></table>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="panel-title"><h3>6. Live Issues & Actions</h3><span class="small">Auto-detected gaps</span></div>
+            <div id="issues" class="timeline"></div>
+            <h4>Actions</h4>
+            <table class="table"><thead><tr><th>Activity</th><th>Owner</th><th>Due</th><th>Notes</th><th></th></tr></thead><tbody id="actions-body"></tbody></table>
+          </section>
+
+          <section class="card">
+            <div class="panel-title"><h3>7. Finalize</h3><span class="small">Lock snapshot</span></div>
+            <div class="callout">Confirm everything captured then finalize to generate Executive Pack.</div>
+            <div class="row"><button id="finalize">Finalize & continue to Review</button><a class="btn secondary" href="review.html">Skip to Review</a></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script type="module" src="assets/wizard.js"></script>
+</body>
+</html>
