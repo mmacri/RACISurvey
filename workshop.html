@@ -50,8 +50,11 @@
     const list = document.getElementById('list');
     function render() {
       const rows = store.listWorkshops();
-      list.innerHTML = rows.length ? rows.map(w => `<tr><td>${w.name}</td><td>${w.org}</td><td>${w.sponsor}</td><td>${w.status}</td><td><button data-open="${w.id}">Open</button></td></tr>`).join('') : '<tr><td colspan="5" class="small">No workshops yet.</td></tr>';
+      list.innerHTML = rows.length ? rows.map(w => `<tr><td>${w.name}</td><td>${w.org}</td><td>${w.sponsor}</td><td>${w.status}</td><td class="row"><button data-open="${w.id}">Open</button><button class="secondary" data-delete="${w.id}">Delete</button></td></tr>`).join('') : '<tr><td colspan="5" class="small">No workshops yet.</td></tr>';
       list.querySelectorAll('button[data-open]')?.forEach(btn => btn.onclick = () => { store.setCurrentWorkshop(btn.dataset.open); window.location.href = 'wizard.html'; });
+      list.querySelectorAll('button[data-delete]')?.forEach(btn => btn.onclick = () => {
+        if (confirm('Delete this workshop? This cannot be undone.')) { store.deleteWorkshop(btn.dataset.delete); render(); }
+      });
     }
     document.getElementById('create').onclick = () => window.location.href = 'index.html#new';
     document.getElementById('reset').onclick = async () => {

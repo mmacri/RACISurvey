@@ -15,21 +15,48 @@ function renderMode() {
   badge.classList.toggle('warn', !!store.state.apiBase);
 }
 
+function completionState(workshop) {
+  if (!workshop) return { pct: 0, missing: ['Create or load a workshop'], gateMet: false };
+  const template = store.getTemplate(workshop.templateId);
+  const missing = [];
+  let completed = 0;
+  if (workshop.name && workshop.org && template) completed++; else missing.push('Setup details');
+  if ((workshop.selectedDomains||[]).length) completed++; else missing.push('Choose scope');
+  const mappedRoles = Object.values(workshop.roleMappings||{}).filter(Boolean).length;
+  if (mappedRoles) completed++; else missing.push('Map roles to people');
+  completed++; // activities review always reachable
+  const activitySet = [...(template?.activities||[]), ...(workshop.activityOverrides?.added||[])].filter(a => !(workshop.activityOverrides?.hidden||[]).includes(a.id));
+  const decisionsMet = activitySet.length ? activitySet.filter(a => {
+    const assigns = workshop.raciAssignments?.[a.id] || {};
+    const hasA = Object.values(assigns).filter(v => v==='A').length === 1;
+    const hasR = Object.values(assigns).some(v => v==='R');
+    return hasA && hasR;
+  }).length / activitySet.length : 0;
+  const raciPct = Math.round(decisionsMet * 100);
+  if (raciPct > 0) completed++;
+  else missing.push('Capture RACI decisions');
+  if (workshop.status === 'final') completed++;
+  if (raciPct >= 70 && mappedRoles && (workshop.selectedDomains||[]).length) completed++;
+  const pct = Math.min(100, Math.round((completed / 7) * 100));
+  return { pct, missing, gateMet: raciPct >= 70 && activitySet.length > 0 };
+}
+
 function renderProgress() {
   const container = qs('#progress-steps');
   const steps = ['Setup','Scope','Roles','Activities','RACI Decisions','Review','Executive Pack'];
   const current = store.currentWorkshop();
+  const state = completionState(current);
   const stepIndex = current?.wizardStep || 1;
-  const pct = Math.round(((stepIndex-1)/(steps.length-1))*100);
-  qs('#progress-pct').textContent = `${pct}% ready`;
+  qs('#progress-pct').textContent = `${state.pct}% ready`;
   container.innerHTML = steps.map((step, idx) => {
     const status = idx+1 < stepIndex ? 'complete' : idx+1 === stepIndex ? 'active' : '';
     const warn = !current && idx>0 ? '<div class="small">Start a workshop</div>' : '';
     return `<div class="step-item ${status}"><div class="step-label">${step}<span class="small">${idx+1}/${steps.length}</span></div>${warn}</div>`;
   }).join('');
   const missing = qs('#missing');
-  if (!current) missing.textContent = 'You need to create or load a workshop to begin.';
-  else missing.textContent = `Next: ${steps[stepIndex-1]} step.`;
+  missing.textContent = state.missing.length ? `What's missing: ${state.missing.join(', ')}` : 'Ready for Executive Pack.';
+  qs('#quick-reports').disabled = !state.gateMet;
+  qs('#go-reports').disabled = !state.gateMet;
 }
 
 function renderResume() {
@@ -85,17 +112,16 @@ function bindActions() {
   qs('#quick-import').addEventListener('click', () => qs('#excel-upload').click());
   qs('#load-demo').addEventListener('click', loadDemo);
   qs('#export-json').addEventListener('click', () => {
-    const current = store.currentWorkshop();
-    if (!current) return alert('Create or load a workshop first.');
-    const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(store.state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${current.name || 'workshop'}.json`;
+    a.download = `awe-state.json`;
     a.click();
   });
   qs('#go-wizard').addEventListener('click', () => window.location.href = 'wizard.html');
   qs('#go-review').addEventListener('click', () => window.location.href = 'review.html');
   qs('#go-reports').addEventListener('click', () => window.location.href = 'reports.html');
+  qs('#quick-reports').addEventListener('click', () => window.location.href = 'reports.html');
 }
 
 async function loadDemo() {
@@ -116,12 +142,12 @@ function populateTemplateSelect() {
 
 function renderQuickPreview() {
   const items = [
-    { title: 'RACI Matrix', desc: 'Final ownership map with highlights.' },
-    { title: 'Gap List', desc: 'Auto-detected missing A/R or overloaded roles.' },
-    { title: 'Action Plan', desc: 'Follow-ups with owners and due dates.' },
-    { title: 'Executive Summary', desc: 'Narrative context for leadership.' },
+    { title: 'RACI Matrix', desc: 'Final ownership map with highlights.', href: 'wizard.html#matrix' },
+    { title: 'Gap List', desc: 'Auto-detected missing A/R or overloaded roles.', href: 'review.html' },
+    { title: 'Action Plan', desc: 'Follow-ups with owners and due dates.', href: 'wizard.html#actions' },
+    { title: 'Executive Summary', desc: 'Narrative context for leadership.', href: 'reports.html' },
   ];
-  qs('#preview').innerHTML = items.map(i => `<div class="preview-card"><strong>${i.title}</strong><div class="small">${i.desc}</div></div>`).join('');
+  qs('#preview').innerHTML = items.map(i => `<a href="${i.href}" class="preview-card"><strong>${i.title}</strong><div class="small">${i.desc}</div></a>`).join('');
 }
 
 function init() {

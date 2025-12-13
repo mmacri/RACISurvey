@@ -205,11 +205,20 @@ function renderIssues() {
   const template = store.getTemplate(workshop.templateId);
   const activities = [...template.activities, ...(workshop.activityOverrides?.added||[])].filter(a => !workshop.activityOverrides?.hidden?.includes(a.id));
   const items = activities.map(a => ({ id:a.id, name:a.name, issues: issuesForActivity(a.id) })).filter(i => i.issues.length);
-  list.innerHTML = items.length ? items.map(it => `<div class="issue-card"><strong>${it.name}</strong><div class="small">${it.issues.join(', ')}</div><div class="row"><button class="secondary" data-resolve="${it.id}">Decide now</button><button class="secondary" data-action="${it.id}">Assign follow-up</button></div></div>`).join('') : '<div class="callout">No open issues. Great job!</div>';
+  list.innerHTML = items.length ? items.map(it => `<div class="issue-card"><strong>${it.name}</strong><div class="small">${it.issues.join(', ')}</div><div class="row"><button class="secondary" data-resolve="${it.id}">Decide now</button><button class="secondary" data-action="${it.id}">Assign follow-up</button><button class="secondary" data-defer="${it.id}">Defer</button></div></div>`).join('') : '<div class="callout">No open issues. Great job!</div>';
   list.querySelectorAll('button[data-resolve]')?.forEach(btn => btn.addEventListener('click', () => {
     alert('Return to matrix and update assignments.');
   }));
   list.querySelectorAll('button[data-action]')?.forEach(btn => btn.addEventListener('click', () => addAction(btn.dataset.action)));
+  list.querySelectorAll('button[data-defer]')?.forEach(btn => btn.addEventListener('click', () => {
+    workshop.activityOverrides = workshop.activityOverrides || { added: [], hidden: [], deferred: [] };
+    if (!workshop.activityOverrides.deferred.includes(btn.dataset.defer)) {
+      workshop.activityOverrides.deferred.push(btn.dataset.defer);
+      save();
+      renderIssues();
+      renderActivities();
+    }
+  }));
 }
 
 function addAction(activityId) {
@@ -224,7 +233,12 @@ function addAction(activityId) {
 
 function renderActions() {
   const tbody = qs('#actions-body');
-  tbody.innerHTML = (workshop.actions||[]).map(a => `<tr><td>${a.activityId}</td><td>${a.owner}</td><td>${a.due||''}</td><td>${a.notes||''}</td></tr>`).join('');
+  tbody.innerHTML = (workshop.actions||[]).map(a => `<tr><td>${a.activityId}</td><td>${a.owner}</td><td>${a.due||''}</td><td>${a.notes||''}</td><td><button class="secondary" data-delete-action="${a.id}">Remove</button></td></tr>`).join('');
+  tbody.querySelectorAll('button[data-delete-action]')?.forEach(btn => btn.addEventListener('click', () => {
+    workshop.actions = (workshop.actions||[]).filter(a => a.id !== btn.dataset.deleteAction);
+    save();
+    renderActions();
+  }));
 }
 
 function finalize() {

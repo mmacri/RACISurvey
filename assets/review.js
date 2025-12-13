@@ -4,7 +4,7 @@ import { markNav } from './router.js';
 function qs(sel){return document.querySelector(sel);} 
 
 function computeScores(workshop) {
-  const template = store.getTemplate(workshop.templateId);
+  const template = store.getTemplate(workshop.templateId) || { activities: [] };
   const acts = [...template.activities, ...(workshop.activityOverrides?.added||[])].filter(a => !workshop.activityOverrides?.hidden?.includes(a.id));
   let complete = 0;
   const gaps = [];
@@ -21,7 +21,7 @@ function computeScores(workshop) {
 }
 
 function renderHeatmap(workshop) {
-  const template = store.getTemplate(workshop.templateId);
+  const template = store.getTemplate(workshop.templateId) || { activities: [], domains: [] };
   const container = qs('#heatmap');
   const activitiesByDomain = {};
   template.activities.forEach(a => { activitiesByDomain[a.domain] = activitiesByDomain[a.domain] || []; activitiesByDomain[a.domain].push(a); });
@@ -50,6 +50,7 @@ function init() {
   markNav('review');
   const workshop = store.currentWorkshop();
   if (!workshop) { alert('Load a workshop first.'); window.location.href = 'index.html'; return; }
+  if (!store.getTemplate(workshop.templateId)) { alert('Template missing. Reload demo data or import the template again.'); window.location.href = 'templates.html'; return; }
   qs('#workshop-badge').textContent = `${workshop.name} • ${workshop.workshopDate}`;
   qs('#mode-badge').textContent = store.state.apiBase ? 'Backend' : 'Static';
   const scores = computeScores(workshop);

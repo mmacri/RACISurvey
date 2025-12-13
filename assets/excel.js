@@ -1,6 +1,7 @@
 import store from './store.js';
 
 function normalizeHeader(cell) { return String(cell || '').trim().toLowerCase(); }
+function slug(value) { return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
 
 export function parseWorkbook(workbook) {
   const template = { id: crypto.randomUUID(), name: workbook.Props?.Title || 'Imported Template', domains: [], roles: [], activities: [], recommended: {}, metadata: { importedAt: new Date().toISOString() } };
@@ -27,12 +28,12 @@ export function parseWorkbook(workbook) {
     // Activities + recommended RACI detection
     if (headers.includes('activity') || headers.includes('activities') || headers.includes('task')) {
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      const roleCols = headers.map((h, idx) => ({ h, idx })).filter(h => ['r','a','c','i',''].includes(h.h) === false && h.h && h.idx > 1);
-      rows.slice(1).forEach(row => {
-        if (!row[0]) return;
+      const roleCols = headers.map((h, idx) => ({ h, idx })).filter(h => h.idx > 1 && h.h && !['domain','activity','activities','task','description'].includes(h.h));
+      rows.slice(1).forEach((row, idx) => {
+        if (!row[0] && !row[1]) return;
         const domain = row[0] || 'General';
         const nameCell = row[1] || row[0];
-        const id = `${name}-${nameCell}`;
+        const id = `${slug(domain)}-${slug(nameCell)}-${idx}`;
         const activity = { id, domain: String(domain).trim(), name: String(nameCell).trim(), description: String(row[2] || '').trim() };
         template.activities.push(activity);
         roleCols.forEach(col => {
@@ -55,7 +56,7 @@ export function parseWorkbook(workbook) {
         if (!label) return;
         const isHeading = !row.slice(1).some(Boolean);
         if (isHeading) { currentDomain = label; if (!template.domains.find(d => d.name === currentDomain)) template.domains.push({ id: currentDomain, name: currentDomain }); return; }
-        const activityId = `${name}-${idx}-${label}`;
+        const activityId = `${slug(currentDomain)}-${slug(label)}-${idx}`;
         template.activities.push({ id: activityId, domain: currentDomain, name: label, description: '' });
         roles.forEach((role, idx2) => {
           const value = (row[idx2 + 1] || '').toString().trim().toUpperCase();

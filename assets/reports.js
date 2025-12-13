@@ -5,7 +5,7 @@ import { markNav } from './router.js';
 function qs(sel){return document.querySelector(sel);} 
 
 function exportCSV(filename, rows) {
-  const csv = rows.map(r => r.map(v => '"'+String(v||'').replace('"','""')+'"').join(',')).join('\n');
+  const csv = rows.map(r => r.map(v => '"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -73,6 +73,9 @@ function bindActions() {
   qs('#export-csv-btn').onclick = () => exportCSVs(workshop);
   qs('#export-excel-btn').onclick = () => exportWorkshopExcel(workshop);
   qs('#exec-summary').onclick = () => exportExecutiveSummary(workshop);
+  const backendEnabled = !!store.state.apiBase;
+  qs('#export-pptx').disabled = !backendEnabled;
+  qs('#export-pdf').disabled = !backendEnabled;
   qs('#export-pptx').onclick = () => exportBackend('pptx', workshop);
   qs('#export-pdf').onclick = () => exportBackend('pdf', workshop);
 }

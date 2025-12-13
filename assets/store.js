@@ -48,7 +48,7 @@ const store = {
   listTemplates() { return this.state.templates; },
   getTemplate(id) { return this.state.templates.find(t => t.id === id); },
   createWorkshop(payload) {
-    const id = crypto.randomUUID();
+    const id = payload.id || crypto.randomUUID();
     const ws = {
       id,
       name: payload.name || 'Workshop',
@@ -89,6 +89,11 @@ const store = {
   },
   setCurrentWorkshop(id) {
     this.state.currentWorkshopId = id; save(this.state);
+  },
+  deleteWorkshop(id) {
+    this.state.workshops = this.state.workshops.filter(w => w.id !== id);
+    if (this.state.currentWorkshopId === id) this.state.currentWorkshopId = null;
+    save(this.state);
   },
   addSnapshot(ws) {
     this.state.snapshots.push({ id: crypto.randomUUID(), workshopId: ws.id, capturedAt: timestamp(), payload: structuredClone(ws) });
