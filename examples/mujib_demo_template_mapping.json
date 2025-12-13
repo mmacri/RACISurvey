@@ -1,0 +1,40 @@
+{
+  "template": {
+    "template_id": "ot_raci_demo",
+    "title": "OT RACI Demo",
+    "role_catalog": ["CIO","CISO","OT Ops","Plant Manager","IT Ops","Vendor","Risk"],
+    "sections": [
+      {"section_id":"governance","title":"Governance","activities":[
+        {"activity_id":"governance:1","activity":"Define OT security strategy","description":"Document leadership outcomes and sponsorship.","recommended_raci":{"A":["CIO"],"R":["CISO"],"C":["Risk"],"I":["Plant Manager"]},"guidance":["Ask for scope clarity"],"signals":["gap if no A","gap if no R"]},
+        {"activity_id":"governance:2","activity":"Set decision rights","description":"Clarify who approves change, funding, and evidence.","recommended_raci":{"A":["CIO"],"R":["OT Ops"]},"guidance":["Capture parking lot"],"signals":["gap if multiple A"]},
+        {"activity_id":"governance:3","activity":"Review accountability map","description":"Check for duplicates and conflicts.","recommended_raci":{"A":["CISO"],"R":["Risk"]},"guidance":[],"signals":["gap if no I"]}
+      ]},
+      {"section_id":"network","title":"Network","activities":[
+        {"activity_id":"network:1","activity":"Segment OT zones","description":"Map RACI for segmentation design.","recommended_raci":{"A":["OT Ops"],"R":["Vendor"]},"guidance":[],"signals":["gap if no A"]},
+        {"activity_id":"network:2","activity":"Change control","description":"Who approves firewall changes?","recommended_raci":{"A":["CIO"],"R":["IT Ops"]},"guidance":[],"signals":["gap if no C"]},
+        {"activity_id":"network:3","activity":"Monitoring coverage","description":"Decide alert routing and tuning.","recommended_raci":{"A":["CISO"],"R":["OT Ops"]},"guidance":[],"signals":["gap if no R"]}
+      ]},
+      {"section_id":"applications","title":"Applications","activities":[
+        {"activity_id":"applications:1","activity":"Patch policy","description":"Who approves OT app patch windows?","recommended_raci":{"A":["CIO"],"R":["IT Ops"]},"guidance":[],"signals":["gap if no A"]},
+        {"activity_id":"applications:2","activity":"Vendor access","description":"Capture remote access approvals.","recommended_raci":{"A":["OT Ops"],"R":["Vendor"]},"guidance":[],"signals":["gap if no R"]},
+        {"activity_id":"applications:3","activity":"Data sharing","description":"Define OT/IT data exchange rules.","recommended_raci":{"A":["Risk"],"R":["OT Ops"]},"guidance":[],"signals":["gap if no C"]}
+      ]},
+      {"section_id":"identity","title":"Identity","activities":[
+        {"activity_id":"identity:1","activity":"Privileged access","description":"Map A and R for domain accounts.","recommended_raci":{"A":["CISO"],"R":["IT Ops"]},"guidance":[],"signals":["gap if no A"]},
+        {"activity_id":"identity:2","activity":"Joiner/mover/leaver","description":"Who triggers OT identity changes?","recommended_raci":{"A":["CIO"],"R":["OT Ops"]},"guidance":[],"signals":["gap if no R"]},
+        {"activity_id":"identity:3","activity":"MFA policy","description":"Decide MFA coverage for OT apps.","recommended_raci":{"A":["Risk"],"R":["CISO"]},"guidance":[],"signals":["gap if no I"]}
+      ]},
+      {"section_id":"resilience","title":"Resilience","activities":[
+        {"activity_id":"resilience:1","activity":"Backup ownership","description":"Who tests restore for OT systems?","recommended_raci":{"A":["IT Ops"],"R":["Vendor"]},"guidance":[],"signals":["gap if no R"]},
+        {"activity_id":"resilience:2","activity":"Incident response","description":"Escalation path and decision rights.","recommended_raci":{"A":["CISO"],"R":["OT Ops"]},"guidance":[],"signals":["gap if no A"]},
+        {"activity_id":"resilience:3","activity":"Tabletop schedule","description":"Agree cadence and owners.","recommended_raci":{"A":["CIO"],"R":["Risk"]},"guidance":[],"signals":["gap if no C"]}
+      ]},
+      {"section_id":"compliance","title":"Compliance","activities":[
+        {"activity_id":"compliance:1","activity":"Evidence collection","description":"Assign who curates OT evidence.","recommended_raci":{"A":["Risk"],"R":["Vendor"]},"guidance":[],"signals":["gap if no A"]},
+        {"activity_id":"compliance:2","activity":"Audit response","description":"Who signs off responses?","recommended_raci":{"A":["CIO"],"R":["CISO"]},"guidance":[],"signals":["gap if no R"]},
+        {"activity_id":"compliance:3","activity":"Standards alignment","description":"RACI for NERC/ISA alignment.","recommended_raci":{"A":["Risk"],"R":["OT Ops"]},"guidance":[],"signals":["gap if no I"]}
+      ]}
+    ]
+  },
+  "mapping": { "section": 0, "activity": 1, "description": 2, "recommended": 3 }
+}

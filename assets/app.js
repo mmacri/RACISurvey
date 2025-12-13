@@ -1,198 +1,278 @@
 import Router from './router.js';
 import Store from './store.js';
-import { demoTemplate } from './templateParser.js';
-import { computeActivityGaps } from './gapEngine.js';
-import { renderExecutiveSummary, renderDecisionLog, renderActionPlan } from './reportRenderer.js';
+import TemplateAdapter from './templateAdapter.js';
+import WizardEngine from './wizardEngine.js';
+import Exports from './exports.js';
+import { renderTable, pill, showModal, toast } from './uiComponents.js';
 
-function demoAttendees() {
-  return [
-    { name: 'Mujib', title: 'CIO' },
-    { name: 'Ariana', title: 'CTO' },
-    { name: 'Samir', title: 'PSA Sr Manager' },
-    { name: 'Dana', title: 'OT Infra & Compliance Manager' },
-    { name: 'Kyle', title: 'EMS Ops Owner' },
-    { name: 'Priya', title: 'GIS Owner' },
-    { name: 'Luis', title: 'Security Architect' },
-    { name: 'Becca', title: 'SCADA Supervisor' },
-    { name: 'Noor', title: 'NERC CIP Lead' },
-    { name: 'Alex', title: 'Change Manager' },
-    { name: 'Taylor', title: 'OT Support Lead' },
-    { name: 'Jordan', title: 'Service Desk Manager' }
-  ];
-}
+const routes = {
+  dashboard: initDashboard,
+  workshops: initWorkshops,
+  wizard: initWizard,
+  review: initReview,
+  reports: initReports,
+  templates: initTemplates
+};
 
-function initDashboard() {
+Router.init(routes);
+updateModeBanner();
+
+async function initDashboard() {
   const state = Store.load();
-  if (!state.templates.find(t => t.id === 'demo-template')) {
-    Store.upsertTemplate(demoTemplate());
-  }
-  const workshops = Store.listWorkshops();
-  const quickStats = document.getElementById('quick-stats');
-  if (quickStats) {
-    const openActions = workshops.reduce((acc, w) => acc + (w.actions?.filter(a => a.status !== 'done').length || 0), 0);
-    const unresolvedGaps = workshops.reduce((acc, w) => acc + (w.gaps?.length || 0), 0);
-    quickStats.innerHTML = `
-      <div class="card"><h3>Workshops</h3><div class="hero-stat">${workshops.length}</div><p class="small">saved locally</p></div>
-      <div class="card"><h3>Open Actions</h3><div class="hero-stat">${openActions}</div></div>
-      <div class="card"><h3>Unresolved Gaps</h3><div class="hero-stat">${unresolvedGaps}</div></div>`;
-  }
-  const continueBtn = document.getElementById('continue-last');
-  if (continueBtn && workshops.length) {
-    continueBtn.onclick = () => {
-      Store.setActive(workshops[workshops.length - 1].id);
-      window.location.href = 'wizard.html';
-    };
-  }
-  const demoBtn = document.getElementById('demo-workshop');
-  if (demoBtn) demoBtn.onclick = seedDemoWorkshop;
+  const start = document.getElementById('cta-start');
+  const cont = document.getElementById('cta-continue');
+  const demo = document.getElementById('cta-demo');
+  const importBtn = document.getElementById('cta-import-json');
+  if (start) start.onclick = () => window.location.hash = '#/workshops';
+  if (cont) cont.onclick = () => window.location.hash = '#/wizard';
+  if (demo) demo.onclick = seedDemo;
+  if (importBtn) importBtn.onclick = () => loadJSON();
+
+  renderReadiness();
+  renderRecent(state.workshops);
 }
 
-function seedDemoWorkshop() {
-  const template = demoTemplate();
-  Store.upsertTemplate(template);
-  const workshop = Store.createWorkshop({
-    name: 'OT RACI Alignment — Mujib Demo',
-    org: 'Demo Utility',
-    sponsor: 'Mujib',
-    template_id: template.id,
-    attendees: demoAttendees(),
-    scope: template.sections.map(s => s.name),
-    mode: 'full'
-  });
-  template.activities.slice(0, 25).forEach((activity, idx) => {
-    const response = {
-      id: crypto.randomUUID(),
-      workshop_id: workshop.id,
-      section_name: activity.section,
-      activity_id: activity.id,
-      accountable_role: idx % 7 === 0 ? null : template.roles[idx % template.roles.length],
-      responsible_roles: [template.roles[(idx + 1) % template.roles.length]],
-      consulted_roles: [template.roles[(idx + 2) % template.roles.length]],
-      informed_roles: [],
-      confidence: idx % 5 === 0 ? 'low' : 'high',
-      status: idx % 6 === 0 ? 'followup' : 'confirmed',
-      notes: `Auto-demo note ${idx + 1}`
-    };
-    response.gaps = computeActivityGaps(response);
-    Store.addActivityResponse(workshop.id, response);
-    if (idx % 3 === 0) {
-      Store.addDecision(workshop.id, { id: crypto.randomUUID(), workshop_id: workshop.id, section_name: activity.section, activity_id: activity.id, decision_text: 'Align ownership', rationale: 'Demo rationale' });
-    }
-    if (idx % 2 === 0) {
-      Store.addAction(workshop.id, { id: crypto.randomUUID(), workshop_id: workshop.id, title: `Follow-up ${idx + 1}`, description: 'Collect evidence', owner: 'OT Infra Team', due_date: '2024-12-01', severity: idx % 6 === 0 ? 'critical' : 'high', status: 'open', related_activity_id: activity.id });
-    }
-  });
-  window.location.href = 'wizard.html';
-}
-
-function renderWizard() {
+function renderReadiness() {
   const state = Store.load();
-  const wsId = state.activeWorkshopId;
-  const ws = Store.getWorkshop(wsId) || state.workshops[0];
-  if (!ws) return;
-  document.getElementById('wizard-title').textContent = ws.name;
-  const template = state.templates.find(t => t.id === ws.template_id) || demoTemplate();
-  const list = document.getElementById('activity-list');
-  if (list) {
-    list.innerHTML = '';
-    template.activities.forEach((act, idx) => {
-      if (ws.scope && !ws.scope.includes(act.section)) return;
-      const item = document.createElement('li');
-      item.innerHTML = `<div class="label-row"><strong>${act.section}</strong><span class="small">${idx + 1}/${template.activities.length}</span></div><div>${act.text}</div>`;
-      item.onclick = () => showActivity(ws, act, template.roles);
-      list.appendChild(item);
+  const readiness = document.getElementById('readiness');
+  if (!readiness) return;
+  const ws = Store.getWorkshop(state.activeWorkshopId) || state.workshops[state.workshops.length - 1];
+  const template = ws ? state.templates.find(t => t.id === ws.template_id) : null;
+  readiness.innerHTML = `
+    <div class="badge ${template ? 'ok' : 'warn'}">Template ${template ? 'selected' : 'missing'}</div>
+    <div class="badge ${ws?.activityResults?.length ? 'ok' : 'warn'}">${ws?.activityResults?.length || 0} activities captured</div>
+    <div class="badge ${ws?.gaps?.length ? 'warn' : 'ok'}">${ws?.gaps?.length || 0} gaps flagged</div>`;
+}
+
+function renderRecent(workshops) {
+  const table = document.getElementById('recent-table');
+  if (!table) return;
+  const rows = workshops.slice(-5).reverse().map(ws => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div>${ws.name}</div><div>${ws.sponsor || '—'}</div><div>${ws.updated_at?.split('T')[0] || ''}</div><div>${ws.status}</div>`;
+    const actions = document.createElement('div');
+    actions.className = 'button-row small';
+    const resume = document.createElement('button'); resume.textContent = 'Resume'; resume.onclick = () => { Store.setActive(ws.id); window.location.hash = '#/wizard'; };
+    const json = document.createElement('button'); json.className = 'secondary'; json.textContent = 'Export JSON'; json.onclick = () => Store.exportWorkshop(ws);
+    actions.append(resume, json);
+    row.appendChild(actions);
+    return row;
+  });
+  renderTable(table, rows, ['Name', 'Sponsor', 'Updated', 'Status', 'Actions']);
+}
+
+async function seedDemo() {
+  const demoWorkshop = await fetch('examples/mujib_demo_workshop.json').then(r => r.json());
+  const demoTemplate = await fetch('examples/mujib_demo_template_mapping.json').then(r => r.json());
+  Store.upsertTemplate({ id: demoTemplate.template.template_id, title: demoTemplate.template.title, sections: demoTemplate.template.sections, role_catalog: demoTemplate.template.role_catalog });
+  Store.upsertMapping({ template_id: demoTemplate.template.template_id, mapping: demoTemplate.mapping, source: 'demo' });
+  Store.seedFromJSON(demoWorkshop);
+  toast('Demo loaded');
+  window.location.hash = '#/wizard';
+}
+
+function loadJSON() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = async () => {
+    const file = input.files[0]; if (!file) return;
+    const data = JSON.parse(await file.text());
+    Store.seedFromJSON(data);
+    toast('Workshop imported');
+    window.location.hash = '#/wizard';
+  };
+  input.click();
+}
+
+function initWorkshops() {
+  const templateSelect = document.getElementById('ws-template');
+  const upload = document.getElementById('ws-template-upload');
+  const startBtn = document.getElementById('ws-start');
+  const saveBtn = document.getElementById('ws-save-draft');
+  const scopeBox = document.getElementById('scope-selector');
+  const roleBox = document.getElementById('role-map');
+  const templates = Store.listTemplates();
+  if (!templates.length) {
+    fetch('examples/mujib_demo_template_mapping.json').then(r => r.json()).then(json => {
+      const tmpl = json.template;
+      Store.upsertTemplate({ id: tmpl.template_id, title: tmpl.title, sections: tmpl.sections, role_catalog: tmpl.role_catalog });
+      Store.upsertMapping({ template_id: tmpl.template_id, mapping: json.mapping, source: 'demo' });
+      templates.push({ id: tmpl.template_id, title: tmpl.title, sections: tmpl.sections, role_catalog: tmpl.role_catalog });
+      templateSelect.innerHTML = templates.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+      refreshScope();
     });
   }
-}
+  templateSelect.innerHTML = templates.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
 
-function showActivity(ws, activity, roles) {
-  const panel = document.getElementById('activity-panel');
-  const response = (ws.activityResponses || []).find(r => r.activity_id === activity.id) || {
-    workshop_id: ws.id,
-    section_name: activity.section,
-    activity_id: activity.id,
-    responsible_roles: [],
-    consulted_roles: [],
-    informed_roles: [],
-    status: 'proposed',
-    confidence: 'med'
+  function refreshScope() {
+    const tmpl = templates.find(t => t.id === templateSelect.value);
+    scopeBox.innerHTML = '';
+    (tmpl?.sections || []).forEach(sec => {
+      const tag = pill(sec.title, true);
+      tag.onclick = () => tag.classList.toggle('active');
+      scopeBox.appendChild(tag);
+    });
+    renderRoleMap(tmpl);
+  }
+
+  function renderRoleMap(tmpl) {
+    roleBox.innerHTML = '';
+    if (!tmpl) return;
+    const box = document.createElement('div'); box.className = 'role-map';
+    tmpl.role_catalog.forEach(role => {
+      const chip = document.createElement('div');
+      chip.className = 'role-chip';
+      chip.innerHTML = `<strong>${role}</strong><p class='small'>Map to attendee</p><input data-role="${role}" placeholder="Same as template">`;
+      box.appendChild(chip);
+    });
+    roleBox.appendChild(box);
+  }
+
+  refreshScope();
+  templateSelect.onchange = refreshScope;
+  upload.onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const tmpl = await TemplateAdapter.importFile(file);
+    Store.upsertTemplate({ id: tmpl.template_id, title: tmpl.title, sections: tmpl.sections, role_catalog: tmpl.role_catalog });
+    templates.push(tmpl);
+    templateSelect.innerHTML = templates.map(t => `<option value="${t.template_id || t.id}">${t.title}</option>`).join('');
+    refreshScope();
+    toast('Template imported');
   };
-  panel.innerHTML = `
-    <div class="panel">
-      <h2>${activity.text}</h2>
-      <p class="small">Section: ${activity.section}</p>
-      <label>Accountable ${buildSelect('accountable', roles, response.accountable_role)}</label>
-      <label>Responsible ${buildMulti('responsible', roles, response.responsible_roles)}</label>
-      <label>Consulted ${buildMulti('consulted', roles, response.consulted_roles)}</label>
-      <label>Informed ${buildMulti('informed', roles, response.informed_roles)}</label>
-      <label>Confidence <select id="confidence"><option value="low" ${response.confidence==='low'?'selected':''}>Low</option><option value="med" ${response.confidence==='med'?'selected':''}>Med</option><option value="high" ${response.confidence==='high'?'selected':''}>High</option></select></label>
-      <label>Status <select id="status"><option value="proposed" ${response.status==='proposed'?'selected':''}>Proposed</option><option value="confirmed" ${response.status==='confirmed'?'selected':''}>Confirmed</option><option value="followup" ${response.status==='followup'?'selected':''}>Needs follow-up</option></select></label>
-      <label>Notes <textarea id="notes">${response.notes||''}</textarea></label>
-      <div class="button-row">
-        <button id="save-act">Save</button>
-        ${ws.activityResponses?.some(r => r.activity_id === activity.id) ? '<button class="btn secondary" id="delete-act">Delete response</button>' : ''}
-      </div>
-      <div id="gap-view"></div>
-    </div>`;
-  document.getElementById('save-act').onclick = () => {
-    const updated = {
-      ...response,
-      accountable_role: document.getElementById('accountable').value || null,
-      responsible_roles: collectChecked('responsible'),
-      consulted_roles: collectChecked('consulted'),
-      informed_roles: collectChecked('informed'),
-      confidence: document.getElementById('confidence').value,
-      status: document.getElementById('status').value,
-      notes: document.getElementById('notes').value
-    };
-    updated.gaps = computeActivityGaps(updated);
-    Store.addActivityResponse(ws.id, updated);
-    renderGaps(updated.gaps);
-  };
-  const deleteBtn = document.getElementById('delete-act');
-  if (deleteBtn) {
-    deleteBtn.onclick = () => {
-      if (confirm('Delete this activity response?')) {
-        Store.removeActivityResponse(ws.id, activity.id);
-        panel.innerHTML = '<p class="small">Response removed. Select another activity to continue.</p>';
-        renderWizard();
-      }
+
+  function buildPayload(status = 'draft') {
+    const tmpl = templates.find(t => (t.template_id || t.id) === templateSelect.value);
+    const scope = Array.from(scopeBox.querySelectorAll('.pill.active')).map(p => p.textContent);
+    const attendees = document.getElementById('ws-attendees').value.split(/\n/).map(line => {
+      const [name, title] = line.split(',').map(s => s.trim());
+      return name ? { name, title } : null;
+    }).filter(Boolean);
+    const role_map = {};
+    roleBox.querySelectorAll('input[data-role]').forEach(input => role_map[input.dataset.role] = input.value || input.dataset.role);
+    return {
+      name: document.getElementById('ws-name').value || 'Untitled workshop',
+      org: document.getElementById('ws-org').value,
+      sponsor: document.getElementById('ws-sponsor').value,
+      date: document.getElementById('ws-date').value,
+      mode: document.getElementById('ws-mode').value,
+      template_id: tmpl?.template_id || tmpl?.id,
+      scope: scope.length ? scope : tmpl?.sections.map(s => s.title),
+      timebox_minutes: document.getElementById('ws-timebox').value,
+      attendees,
+      role_map,
+      status
     };
   }
-  renderGaps(response.gaps || []);
+
+  startBtn.onclick = () => {
+    const ws = Store.createWorkshop(buildPayload('in_progress'));
+    toast('Workshop created');
+    window.location.hash = '#/wizard';
+  };
+  saveBtn.onclick = () => { Store.createWorkshop(buildPayload('draft')); toast('Draft saved'); renderWorkshopTable(); };
+
+  document.getElementById('ws-export-all').onclick = () => Store.listWorkshops().forEach(Store.exportWorkshop);
+  renderWorkshopTable();
 }
 
-function buildSelect(id, roles, value) {
-  return `<select id="${id}"><option value="">None / Unclear</option>${roles.map(r => `<option value="${r}" ${value===r?'selected':''}>${r}</option>`).join('')}</select>`;
+function renderWorkshopTable() {
+  const table = document.getElementById('ws-table');
+  if (!table) return;
+  const rows = Store.listWorkshops().map(ws => {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<div>${ws.name}</div><div>${ws.org || ''}</div><div>${ws.status}</div><div>${ws.mode}</div>`;
+    const actions = document.createElement('div'); actions.className = 'button-row small';
+    const resume = document.createElement('button'); resume.textContent = 'Resume'; resume.onclick = () => { Store.setActive(ws.id); window.location.hash = '#/wizard'; };
+    const exportBtn = document.createElement('button'); exportBtn.className = 'secondary'; exportBtn.textContent = 'Export'; exportBtn.onclick = () => Store.exportWorkshop(ws);
+    const del = document.createElement('button'); del.className = 'danger'; del.textContent = 'Delete'; del.onclick = () => { Store.deleteWorkshop(ws.id); renderWorkshopTable(); };
+    actions.append(resume, exportBtn, del);
+    row.appendChild(actions);
+    return row;
+  });
+  renderTable(table, rows, ['Name', 'Org', 'Status', 'Mode', 'Actions']);
 }
 
-function buildMulti(id, roles, values=[]) {
-  return `<div>${roles.map(r => `<label style='display:block;'><input type="checkbox" name="${id}" value="${r}" ${values.includes(r)?'checked':''}/> ${r}</label>`).join('')}</div>`;
+function initWizard() {
+  const state = Store.load();
+  const ws = Store.getWorkshop(state.activeWorkshopId) || state.workshops[0];
+  if (!ws) { window.location.hash = '#/workshops'; return; }
+  const tmpl = state.templates.find(t => t.id === ws.template_id || t.template_id === ws.template_id) || state.templates[0];
+  WizardEngine.init('wizard-nav', 'wizard-main', 'wizard-activity', ws, tmpl);
 }
 
-function collectChecked(name) {
-  return Array.from(document.querySelectorAll(`input[name='${name}']:checked`)).map(i => i.value);
-}
-
-function renderGaps(gaps) {
-  const gapView = document.getElementById('gap-view');
-  if (!gapView) return;
-  if (!gaps.length) { gapView.innerHTML = '<p class="small">No gaps detected.</p>'; return; }
-  gapView.innerHTML = gaps.map(g => `<div class="alert"><strong>${g.severity.toUpperCase()}</strong> — ${g.message}</div>`).join('');
-}
-
-function renderReports() {
+function initReview() {
   const state = Store.load();
   const ws = Store.getWorkshop(state.activeWorkshopId) || state.workshops[0];
   if (!ws) return;
-  document.getElementById('reports').innerHTML = renderExecutiveSummary(ws) + renderDecisionLog(ws) + renderActionPlan(ws);
+  const stats = document.getElementById('review-stats');
+  stats.innerHTML = `
+    <div class="card"><h3>Activities completed</h3><div class="hero-stat">${ws.activityResults.length}</div></div>
+    <div class="card"><h3>Gaps</h3><div class="hero-stat">${ws.gaps?.length || 0}</div></div>
+    <div class="card"><h3>Actions</h3><div class="hero-stat">${ws.actions?.length || 0}</div></div>`;
+  document.getElementById('return-wizard').onclick = () => window.location.hash = '#/wizard';
+  document.getElementById('finalize-workshop').onclick = () => { Store.updateWorkshop(ws.id, { status: 'finalized', finalized_at: new Date().toISOString() }); toast('Workshop finalized'); };
+  renderHeatmap(ws);
 }
 
-window.AWE = { initDashboard, seedDemoWorkshop, renderWizard, renderReports };
-Router.init();
+function renderHeatmap(ws) {
+  const template = Store.listTemplates().find(t => t.id === ws.template_id || t.template_id === ws.template_id) || { sections: [] };
+  const table = document.createElement('table');
+  const roles = template.role_catalog || [];
+  const header = document.createElement('tr');
+  header.innerHTML = `<th>Activity</th>${roles.map(r => `<th>${r}</th>`).join('')}`;
+  table.appendChild(header);
+  template.sections.forEach(sec => {
+    sec.activities.forEach(act => {
+      const res = ws.activityResults.find(r => r.activity_id === act.activity_id) || {};
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${sec.title}: ${act.activity}</td>${roles.map(role => cell(role, res)).join('')}`;
+      table.appendChild(row);
+    });
+  });
+  const container = document.getElementById('heatmap');
+  container.innerHTML = '';
+  container.appendChild(table);
+}
 
-if (document.readyState !== 'loading') {
-  initDashboard();
-} else {
-  document.addEventListener('DOMContentLoaded', initDashboard);
+function cell(role, res) {
+  let val = '';
+  let cls = '';
+  if (res.accountable_role === role) { val = 'A'; cls = 'cell-a'; }
+  if (res.responsible_roles?.includes(role)) { val = 'R'; cls = 'cell-r'; }
+  if (res.consulted_roles?.includes(role)) { val = 'C'; cls = 'cell-c'; }
+  if (res.informed_roles?.includes(role)) { val = 'I'; cls = 'cell-i'; }
+  return `<td class="${cls}">${val}</td>`;
+}
+
+function initReports() {
+  Exports.initExportGrid();
+}
+
+function initTemplates() {
+  const upload = document.getElementById('template-upload');
+  const list = document.getElementById('template-list');
+  upload.onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const tmpl = await TemplateAdapter.importFile(file);
+    const normalized = { id: tmpl.template_id, title: tmpl.title, sections: tmpl.sections, role_catalog: tmpl.role_catalog };
+    Store.upsertTemplate(normalized);
+    toast('Template stored');
+    renderTemplateList();
+  };
+  function renderTemplateList() {
+    list.innerHTML = '';
+    Store.listTemplates().forEach(t => {
+      const item = document.createElement('div'); item.className = 'item';
+      item.innerHTML = `<strong>${t.title}</strong><p class='small'>${t.sections.length} sections · ${t.role_catalog.length} roles</p>`;
+      list.appendChild(item);
+    });
+  }
+  renderTemplateList();
+}
+
+function updateModeBanner() {
+  const base = localStorage.getItem('apiBase');
+  document.getElementById('mode-label').textContent = base ? 'Local Mode' : 'Static Mode';
+  document.getElementById('api-health').textContent = base ? `Backend: ${base}` : 'Backend: not detected';
 }

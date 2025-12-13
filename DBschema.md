@@ -1,62 +1,81 @@
-# Database Schema
+# Data schema
 
 ## Template
-- `id` (uuid, pk)
-- `name` (text)
-- `source_filename` (text)
+- `id` (string, hash-safe)
+- `title` (text)
+- `role_catalog` (array of role labels)
+- `sections` (array of Section)
 - `imported_at` (datetime)
-- `sections` (json array of section names)
-- `roles` (json array)
-- `activities` (json array of objects: id, section, sheet, text)
+
+### Section
+- `section_id` (string)
+- `title` (text)
+- `activities` (array of Activity)
+
+### Activity
+- `activity_id` (string)
+- `activity` (text)
+- `description` (text)
+- `recommended_raci` (object with keys R/A/C/I -> array of roles)
+- `guidance` (string array)
+- `signals` (string array)
+
+## TemplateMapping
+- `template_id` (string FK -> Template.id)
+- `mapping` (object { section, activity, description, recommended })
+- `source` (original filename)
 
 ## Workshop
-- `id` (uuid, pk)
+- `id` (uuid)
 - `name` (text)
 - `org` (text)
 - `sponsor` (text)
-- `created_at` / `updated_at` (datetime)
-- `template_id` (fk Template.id)
-- `scope` (json array of section names)
-- `mode` (executive|full)
-- `attendees` (json array of objects)
-- `role_map` (json key/value)
-- `status` (draft|finalized)
-- `finalized_at` (datetime nullable)
+- `template_id` (FK -> Template.id)
+- `scope` (array of section titles)
+- `mode` (`executive` | `full`)
+- `attendees` (array of {name, title})
+- `role_map` (object templateRole -> attendeeRole)
+- `status` (`draft` | `in_progress` | `finalized`)
+- `created_at` / `updated_at` / `finalized_at`
 
-## ActivityResponse
-- `id` (uuid, pk)
-- `workshop_id` (fk Workshop.id)
-- `section_name` (text)
-- `activity_id` (text)
-- `accountable_role` (text nullable)
-- `responsible_roles` (json array)
-- `consulted_roles` (json array)
-- `informed_roles` (json array)
-- `confidence` (low|med|high)
-- `status` (proposed|confirmed|followup)
+## WorkshopSection
+- Derived from Template sections filtered by workshop scope; stored as part of Workshop for quick loading.
+
+## ActivityResult
+- `activity_id` (string)
+- `section_id` (string)
+- `accountable_role` (string|null)
+- `responsible_roles` (array)
+- `consulted_roles` (array)
+- `informed_roles` (array)
+- `confidence` (`high`|`med`|`low`)
+- `status` (`confirmed`|`followup`|`parked`)
 - `notes` (text)
-- `last_updated` (datetime)
+- `gaps` (array of Gap)
+- `completeness` (0-100)
+- `updated_at`
 
-## Decision
-- `id` (uuid, pk)
-- `workshop_id` (fk Workshop.id)
-- `section_name` (text)
-- `activity_id` (text)
-- `decision_text` (text)
-- `rationale` (text)
-- `decided_by` (text)
-- `timestamp` (datetime)
+## Gap
+- `severity` (`critical`|`high`|`medium`|`low`)
+- `category` (ownership|responsible|evidence|progress)
+- `message` (text)
 
 ## ActionItem
-- `id` (uuid, pk)
-- `workshop_id` (fk Workshop.id)
-- `severity` (critical|high|medium|low)
+- `id` (uuid)
 - `title` (text)
-- `description` (text)
 - `owner` (text)
-- `due_date` (text)
+- `due_date` (date string)
+- `severity` (critical|high|medium|low)
 - `status` (open|in_progress|done)
-- `related_activity_id` (text nullable)
 
-## Gap (computed view)
-- Not stored; derived from ActivityResponse using gap engine (missing A, multiple A, missing R, too many R, A=R flag, low confidence, follow-up).
+## Decision
+- `id` (uuid)
+- `activity_id` (string)
+- `decision_text` (text)
+- `rationale` (text)
+
+## ExportArtifact (metadata)
+- `workshop_id`
+- `kind` (json|excel|pptx|pdf)
+- `generated_at`
+- `source` (static|backend)

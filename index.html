@@ -7,86 +7,33 @@
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-frame">
     <aside class="sidebar">
-      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
+      <div class="brand">
+        <div class="logo-circle">A</div>
+        <div>
+          <div class="brand-title">Alignment Workshop Engine</div>
+          <div class="brand-sub">Guided RACI facilitation</div>
+        </div>
+      </div>
       <nav class="nav">
-        <a data-nav href="index.html">Dashboard</a>
-        <a data-nav href="workshop.html">Workshops</a>
-        <a data-nav href="wizard.html">Wizard</a>
-        <a data-nav href="reports.html">Reports / Exports</a>
-        <a data-nav href="templates.html">Templates</a>
+        <a data-route="dashboard" href="#/dashboard" class="active">Dashboard</a>
+        <a data-route="workshops" href="#/workshops">Workshops</a>
+        <a data-route="wizard" href="#/wizard">Wizard</a>
+        <a data-route="review" href="#/review">Review</a>
+        <a data-route="reports" href="#/reports">Reports / Exports</a>
+        <a data-route="templates" href="#/templates">Templates</a>
       </nav>
+      <div class="mode-indicator">
+        <div id="mode-label">Static Mode</div>
+        <div class="small" id="api-health">Backend: not detected</div>
+      </div>
     </aside>
-    <main class="main">
-      <section class="hero panel">
-        <div>
-          <h1>Alignment Workshop Engine</h1>
-          <p>Import a RACI workbook, guide leadership through a facilitated wizard, capture decisions fast, and generate executive outputs instantly.</p>
-          <div class="button-row">
-            <button onclick="AWE.seedDemoWorkshop()" id="demo-workshop">Demo Workshop</button>
-            <button class="btn secondary" id="continue-last">Continue last workshop</button>
-            <a class="btn secondary" href="wizard.html">Start new workshop</a>
-          </div>
-        </div>
-        <div>
-          <div class="panel">
-            <h2>Quick Start</h2>
-            <ol class="small">
-              <li>Create workshop & choose template</li>
-              <li>Map roles and confirm scope</li>
-              <li>Run wizard section by section</li>
-              <li>Review heatmap and finalize</li>
-              <li>Export JSON / Excel / PPTX / PDF</li>
-            </ol>
-          </div>
-        </div>
-      </section>
-      <section class="panel">
-        <div class="section-title">
-          <h2>Landing actions</h2>
-          <div class="button-row">
-            <a class="btn secondary" href="workshop.html">Start new workshop</a>
-            <a class="btn secondary" href="wizard.html">Open wizard</a>
-            <label class="btn secondary" style="cursor:pointer;">Import template<input type="file" id="template-upload" style="display:none"></label>
-          </div>
-        </div>
-        <p class="small">This dashboard is optimized for live workshops: continue where you left off or spin up a new session using the OT RACI template.</p>
-        <div id="quick-stats" class="grid three"></div>
-      </section>
-      <section class="panel">
-        <h2>Recent workshops</h2>
-        <ul id="recent-workshops" class="list"></ul>
-      </section>
+    <main class="content">
+      <div id="page-container" class="page-container"></div>
     </main>
   </div>
-  <script type="module" src="assets/app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script>
-    document.getElementById('template-upload').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        import('./assets/templateParser.js').then(mod => {
-          const tmpl = mod.parseWorkbook(workbook);
-          import('./assets/store.js').then(store => {
-            store.default.upsertTemplate(tmpl);
-            alert('Template imported: ' + tmpl.name);
-          });
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    });
-
-    // render recents once module store available
-    import('./assets/store.js').then(store => {
-      const list = document.getElementById('recent-workshops');
-      const workshops = store.default.listWorkshops().slice(-5).reverse();
-      list.innerHTML = workshops.length ? workshops.map(w => `<li><div class="label-row"><strong>${w.name}</strong><span class="small">${w.updated_at}</span></div><div class="small">${w.org} · ${w.scope?.join(', ')||'All sections'}</div></li>`).join('') : '<li class="small">No workshops yet. Start one!</li>';
-    });
-  </script>
+  <script type="module" src="assets/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,47 @@
+<section class="panel">
+  <div class="section-title">
+    <h1>Workshop setup</h1>
+    <p class="small">Define metadata, attach a template, pick scope, and map roles before launching the live wizard.</p>
+  </div>
+  <div class="stepper">
+    <div class="step" data-step="meta">
+      <h3>Step A — Metadata</h3>
+      <div class="grid two">
+        <label>Workshop name<input id="ws-name" placeholder="OT RACI Alignment — Session 01"></label>
+        <label>Org / Customer<input id="ws-org" placeholder="GridCo"></label>
+        <label>Sponsor<input id="ws-sponsor" placeholder="Mujib"></label>
+        <label>Date<input id="ws-date" type="date"></label>
+        <label>Workshop type<select id="ws-mode"><option value="executive">Executive</option><option value="full">Full RACI</option></select></label>
+      </div>
+      <label>Attendees (name, title per line)<textarea id="ws-attendees" rows="3"></textarea></label>
+    </div>
+    <div class="step" data-step="template">
+      <h3>Step B — Template selection</h3>
+      <div class="grid two">
+        <label>Choose saved template<select id="ws-template"></select></label>
+        <label class="file">Upload Excel<input type="file" id="ws-template-upload" accept=".xlsx,.xls"></label>
+      </div>
+      <p class="small">Excel stays canonical. If headers do not match, a mapping prompt appears before storing.</p>
+    </div>
+    <div class="step" data-step="scope">
+      <h3>Step C — Scope</h3>
+      <div id="scope-selector" class="pillbox"></div>
+      <label>Timebox per section (optional minutes)<input id="ws-timebox" placeholder="45"></label>
+    </div>
+    <div class="step" data-step="roles">
+      <h3>Step D — Role mapping</h3>
+      <div id="role-map"></div>
+    </div>
+  </div>
+  <div class="button-row">
+    <button id="ws-start">Start wizard</button>
+    <button class="secondary" id="ws-save-draft">Save draft</button>
+  </div>
+</section>
+<section class="panel">
+  <div class="section-title">
+    <h2>Saved workshops</h2>
+    <div class="button-row small"><button id="ws-export-all" class="secondary">Bulk export JSON</button></div>
+  </div>
+  <div class="table" id="ws-table"></div>
+</section>

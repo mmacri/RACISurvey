@@ -1,49 +1,44 @@
 # Alignment Workshop Engine (AWE)
 
-Alignment Workshop Engine is a static-first, self-hosted web app for running facilitated RACI workshops. Upload the Excel workbook that defines your framework, guide leaders through the wizard, surface gaps, and export executive-ready packs. Everything runs from the repository root so GitHub Pages can publish directly without a backend.
+Alignment Workshop Engine is a guided, static-first RACI workshop tool. Import a canonical Excel workbook, create or resume workshops, capture decisions through a wizard, and export an executive pack (JSON, filled Excel, optional PPTX/PDF via FastAPI). The app is hash-routed and ships ready for GitHub Pages.
+
+## Quick start
+1. Open `index.html` locally or publish the repository root to GitHub Pages.
+2. On the Dashboard choose **Load Mujib Demo** to explore the full flow (wizard + review + exports) with 18 pre-filled activities and 7 gaps.
+3. Upload your own workbook from **Templates**; if headers are unknown the mapping UI will prompt for section/activity/description/RACI columns.
+4. Use **Workshops** to set metadata, pick scope, and map roles, then jump into the **Wizard** to capture RACI.
+5. Finalize from **Review**, then download JSON/Excel (static) or PPTX/PDF when the optional FastAPI backend is running.
 
 ## Repository layout
 ```
-/
-  index.html (dashboard)
-  workshop.html
-  wizard.html
-  review.html
-  reports.html
-  templates.html
-  assets/
-    app.css, theme.css
-    app.js, store.js, excel.js, wizard.js, review.js, reports.js, router.js
-  data/demo_mujib.json
-  vendor/xlsx.full.min.js
-  vendor/chart.umd.min.js
-  README.md
+index.html                # hash-routed shell
+assets/                   # JS + styles
+  app.js                  # route initializers and page wiring
+  router.js               # hash router that loads pages/* into the shell
+  store.js                # IndexedDB/localStorage-like persistence helpers
+  templateAdapter.js      # SheetJS parser + mapping UI
+  wizardEngine.js         # guided facilitator view
+  exports.js              # JSON/Excel + backend-aware PPTX/PDF helpers
+  uiComponents.js         # modal/table helpers
+pages/                    # page fragments loaded by the router
+backend/                  # optional FastAPI endpoints (PPTX/PDF/Excel placeholders)
+examples/                 # Mujib demo JSON + template mapping + Excel workbook
 ```
 
-## Running locally
-Open `index.html` in a browser (no build step required). Data is stored in `localStorage` under the `awe.state.v1` key.
+## Running modes
+- **Static mode (default / GitHub Pages):** no build step. Open `index.html` and the app persists to `localStorage` under `awe.state.v2`. JSON and filled Excel exports are generated in-browser using SheetJS.
+- **Local mode (optional):** start the FastAPI app (`uvicorn backend.main:app --reload`) and set `localStorage.apiBase` to the server URL. The Reports page will enable PPTX/PDF buttons and send the current workshop payloads to `/api/export/pptx` and `/api/export/pdf`.
 
-## GitHub Pages
-Publish the repository root as the Pages source. All asset links are relative; if the repository is served from a subpath, the helper in `assets/router.js` builds paths accordingly.
+## Deployment
+- GitHub Pages: serve the repository root; routing uses URL hashes so refreshes will not 404.
+- Any static host: upload the repository contents; all asset URLs are relative.
 
-## Core flows
-1. **Dashboard (`index.html`)** – Start or resume a workshop, import Excel templates, and load the Mujib demo dataset.
-2. **Wizard (`wizard.html`)** – Seven guided steps with autosave, RACI matrix cycling (blank → R → A → C → I), issue detection, and actions.
-3. **Review (`review.html`)** – Heatmap, top gaps, hotspots, and scores with a link back to the wizard.
-4. **Executive Pack (`reports.html`)** – Export JSON/CSV/Filled Excel in static mode and call backend endpoints for PPTX/PDF when `apiBase` is set.
-5. **Templates (`templates.html`)** – Upload or preview Excel templates. Excel is canonical; templates are read-only once stored.
+## Data model
+See `DBschema.md` for the canonical entities: Template, TemplateMapping, Workshop, WorkshopSection, ActivityResult, Gap, ActionItem, ExportArtifact.
 
-## Excel handling
-AWE expects an uploaded workbook to include domain, role, and activity information. The lightweight parser in `assets/excel.js` detects sheets by headers (domain, role, activity) and preserves recommended RACI hints. The bundled `vendor/xlsx.full.min.js` bootstraps the SheetJS library via CDN when offline copies are unavailable.
-
-## Demo data
-`data/demo_mujib.json` seeds an OT alignment scenario with 5 domains, 10 roles, 22 activities, and intentional ownership gaps. Use the **Load Mujib demo** button on the dashboard to import it as the current workshop.
-
-## Backend (optional)
-If you set `apiBase` in `localStorage` (for example to `http://localhost:8000`), the export buttons on `reports.html` enable PPTX/PDF calls to the backend service. Static JSON/CSV/Excel exports always work without a backend.
-
-## Running modes and data flow
-- **Static (GitHub Pages) mode:** open `index.html` (or the `docs/` equivalent) directly. All navigation is plain HTML links and JavaScript modules under `assets/`. Decisions, templates, and workshops persist to `localStorage` under the `awe.*` keys so the browser remembers your work between sessions.
-- **Local backend mode (optional):** start the FastAPI service with `./scripts/run_local.sh` and set `localStorage.apiBase` to your host (e.g., `http://localhost:8000`). The UI automatically lights up PPTX/PDF export buttons when it detects the backend.
-- **Data portability:** every workshop can be exported/imported as JSON from the Reports page. Templates are imported from Excel via the Templates page and saved locally; exporting filled Excel works entirely client-side using SheetJS.
-- **Executive outputs:** print-friendly HTML is available from the Reports / Exports page. In local mode, PPTX/PDF variants call into the backend for richer formatting.
+## Acceptance checklist
+- Dashboard shows **Load Mujib Demo** and **Start New Workshop** CTA.
+- Demo flow resumes the wizard, surfaces gaps on Review, and exports JSON/Excel.
+- Template upload triggers mapping UI if headers are unknown.
+- Creating and finalizing a workshop updates the Review + Reports views and exports counts.
+- Static mode creates filled Excel in-browser; local mode enables PPTX/PDF buttons.

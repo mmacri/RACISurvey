@@ -1,35 +1,31 @@
 # Agent Playbook
 
 ## Build order
-1. Ensure `/docs` assets exist and reference relative paths.
-2. Seed demo data under `/examples`.
-3. Wire FastAPI backend exports (JSON/XLSX/PPTX/PDF).
-4. Refresh documentation (README, PDI, UI, Styles, dashboards, reports, DBschema, Sampledatademo).
+1. Keep repository root as deployable static site (hash routing, relative assets).
+2. Seed demo assets under `/examples` (workshop, template mapping, workbook).
+3. Keep FastAPI backend endpoints `/api/export/{excel|pptx|pdf}` and `/api/template/parse` available for local mode.
+4. Refresh documentation files (README, PDI, UI, Styles, dashboards, reports, DBschema, Sampledatademo).
 
 ## Acceptance checklist
-- `/docs/index.html` shows dashboard actions (new, continue, import, demo).
-- Wizard can load demo data and flag missing/multiple Accountables.
-- Exports available: JSON in static mode; XLSX/PPTX/PDF via backend endpoints.
-- GitHub Pages workflow publishes `/docs`.
+- Dashboard lists New/Continue/Load Mujib Demo plus import JSON.
+- Wizard loads demo, shows sections/activities, and flags missing A/R gaps.
+- Reports page exports JSON and filled Excel in static mode; PPTX/PDF buttons enable only when `localStorage.apiBase` exists.
+- GitHub Pages ready: all links use `#/route` hashes.
 
 ## Run static
-Open `docs/index.html` in a browser (or hosted via GitHub Pages). Upload `DRAFT_OT_RACI_TEMPLATE_v.1 copy.xlsx` to drive the wizard. Data persists to `localStorage` under `awe.workshops`.
+Open `index.html` directly (or deploy to GitHub Pages). Data persists to `localStorage` under `awe.state.v2`.
 
 ## Run local backend
-```bash
+```
 python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
-./scripts/run_local.sh
+uvicorn backend.main:app --reload
 ```
-API: `http://localhost:8000`.
-
-## Load template
-- Static: upload workbook on the dashboard or Templates page.
-- Local: `POST /api/templates/import` with the Excel file.
+Set `localStorage.apiBase` to `http://localhost:8000` to light up PPTX/PDF.
 
 ## Demo workshop
-Use the **Demo Workshop** button on the dashboard. It preloads 12 attendees, 25 activities, gaps, decisions, and actions for Mujib.
+Use **Load Mujib Demo** on Dashboard to import template, mapping, and a workshop with 18 activities, 7 gaps, and 5 action items.
 
-## Generate outputs
-- Static: `Reports / Exports` page → JSON export button.
-- Local: call `/api/workshops/{id}/export/{json|xlsx|pptx|pdf}` after creating a workshop and posting responses.
+## Outputs
+- Static: JSON and Excel downloads from **Reports / Exports**.
+- Local: PPTX/PDF endpoints accept the workshop payload and stream files back.
