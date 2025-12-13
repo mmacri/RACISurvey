@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates - AWE</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
+      <nav class="nav">
+        <a data-nav href="index.html">Dashboard</a>
+        <a data-nav href="workshop.html">Workshops</a>
+        <a data-nav href="wizard.html">Wizard</a>
+        <a data-nav href="reports.html">Reports / Exports</a>
+        <a data-nav href="templates.html">Templates</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="panel">
+        <h2>Templates</h2>
+        <p class="small">Excel is canonical. Upload a workbook to drive the wizard. Stored locally for static hosting.</p>
+        <label class="btn secondary" style="cursor:pointer;">Upload template<input type="file" id="tmpl-upload" style="display:none"></label>
+        <ul id="tmpl-list" class="list" style="margin-top:16px;"></ul>
+      </div>
+    </main>
+  </div>
+  <script type="module">
+    import Router from './assets/router.js';
+    import Store from './assets/store.js';
+    import { parseWorkbook } from './assets/templateParser.js';
+    Router.init();
+    function renderList() {
+      const list = document.getElementById('tmpl-list');
+      const templates = Store.load().templates;
+      list.innerHTML = templates.map(t => `<li><div class="label-row"><strong>${t.name}</strong><span class="small">${t.source_filename}</span></div><div class="small">${t.sections?.length||0} sections · ${t.roles?.length||0} roles</div></li>`).join('');
+    }
+    renderList();
+    document.getElementById('tmpl-upload').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const tmpl = parseWorkbook(workbook);
+        Store.upsertTemplate(tmpl);
+        renderList();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</body>
+</html>
