@@ -1,112 +1,128 @@
-const STORAGE_KEY = 'awe.state.v1';
-const initialState = {
-  templates: [],
-  workshops: [],
-  currentWorkshopId: null,
-  snapshots: [],
-  apiBase: '',
-};
+const Store = (() => {
+  const WORKSHOP_KEY = 'awe.workshops';
+  const TEMPLATE_KEY = 'awe.templates';
+  const ACTIVE_KEY = 'awe.activeWorkshop';
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return structuredClone(initialState);
-    const parsed = JSON.parse(raw);
-    return { ...structuredClone(initialState), ...parsed };
-  } catch (err) {
-    console.warn('Unable to load state', err);
-    return structuredClone(initialState);
+  const defaultState = {
+    templates: [],
+    workshops: [],
+    activeWorkshopId: null
+  };
+
+  function load() {
+    const raw = localStorage.getItem(WORKSHOP_KEY);
+    const templates = JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
+    const workshops = raw ? JSON.parse(raw) : [];
+    const activeWorkshopId = localStorage.getItem(ACTIVE_KEY);
+    return { templates, workshops, activeWorkshopId };
   }
-}
 
-function save(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+  function save({ templates, workshops, activeWorkshopId }) {
+    localStorage.setItem(WORKSHOP_KEY, JSON.stringify(workshops || []));
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates || []));
+    if (activeWorkshopId) {
+      localStorage.setItem(ACTIVE_KEY, activeWorkshopId);
+    }
+  }
 
-function upsert(arr, item, key='id') {
-  const idx = arr.findIndex(i => i[key] === item[key]);
-  if (idx >= 0) arr[idx] = { ...arr[idx], ...item };
-  else arr.push(item);
-  return arr;
-}
+  function upsertTemplate(template) {
+    const state = load();
+    const existing = state.templates.find(t => t.id === template.id);
+    if (existing) {
+      Object.assign(existing, template);
+    } else {
+      state.templates.push(template);
+    }
+    save(state);
+    return template;
+  }
 
-function timestamp() {
-  return new Date().toISOString();
-}
-
-const store = {
-  state: load(),
-  reset() { this.state = structuredClone(initialState); save(this.state); },
-  setApiBase(url) { this.state.apiBase = url || ''; save(this.state); },
-  upsertTemplate(tmpl) {
-    if (!tmpl.id) tmpl.id = crypto.randomUUID();
-    tmpl.createdAt = tmpl.createdAt || timestamp();
-    upsert(this.state.templates, tmpl);
-    save(this.state);
-    return tmpl;
-  },
-  listTemplates() { return this.state.templates; },
-  getTemplate(id) { return this.state.templates.find(t => t.id === id); },
-  createWorkshop(payload) {
-    const id = payload.id || crypto.randomUUID();
+  function createWorkshop(payload) {
+    const state = load();
     const ws = {
-      id,
-      name: payload.name || 'Workshop',
-      org: payload.org || '',
-      sponsor: payload.sponsor || '',
-      templateId: payload.templateId,
-      mode: payload.mode || 'Executive',
-      attendees: payload.attendees || [],
-      roleMappings: payload.roleMappings || {},
-      selectedDomains: payload.selectedDomains || [],
-      goals: payload.goals || [],
-      activityOverrides: payload.activityOverrides || { added: [], hidden: [], deferred: [] },
-      raciAssignments: payload.raciAssignments || {},
-      issues: payload.issues || [],
-      actions: payload.actions || [],
+      id: crypto.randomUUID(),
       status: 'draft',
-      wizardStep: payload.wizardStep || 1,
-      timestamps: { created: timestamp(), updated: timestamp() },
-      workshopDate: payload.workshopDate || new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      activityResponses: [],
+      decisions: [],
+      actions: [],
+      gaps: [],
+      ...payload
     };
-    this.state.workshops.push(ws);
-    this.state.currentWorkshopId = id;
-    save(this.state);
+    state.workshops.push(ws);
+    state.activeWorkshopId = ws.id;
+    save(state);
     return ws;
-  },
-  updateWorkshop(id, data) {
-    const ws = this.state.workshops.find(w => w.id === id);
-    if (!ws) return null;
-    Object.assign(ws, data);
-    ws.timestamps.updated = timestamp();
-    save(this.state);
-    return ws;
-  },
-  listWorkshops() { return this.state.workshops; },
-  getWorkshop(id) { return this.state.workshops.find(w => w.id === id); },
-  currentWorkshop() {
-    return this.getWorkshop(this.state.currentWorkshopId);
-  },
-  setCurrentWorkshop(id) {
-    this.state.currentWorkshopId = id; save(this.state);
-  },
-  deleteWorkshop(id) {
-    this.state.workshops = this.state.workshops.filter(w => w.id !== id);
-    if (this.state.currentWorkshopId === id) this.state.currentWorkshopId = null;
-    save(this.state);
-  },
-  addSnapshot(ws) {
-    this.state.snapshots.push({ id: crypto.randomUUID(), workshopId: ws.id, capturedAt: timestamp(), payload: structuredClone(ws) });
-    save(this.state);
-  },
-  resetDemo() { this.reset(); },
-  loadDemo(data) {
-    this.reset();
-    data.templates?.forEach(t => this.upsertTemplate(t));
-    data.workshops?.forEach(w => this.createWorkshop(w));
-    if (data.currentWorkshopId) this.state.currentWorkshopId = data.currentWorkshopId;
-    save(this.state);
   }
-};
 
-export default store;
+  function updateWorkshop(id, changes) {
+    const state = load();
+    const ws = state.workshops.find(w => w.id === id);
+    if (!ws) return null;
+    Object.assign(ws, changes, { updated_at: new Date().toISOString() });
+    save(state);
+    return ws;
+  }
+
+  function getWorkshop(id) {
+    const state = load();
+    return state.workshops.find(w => w.id === id) || null;
+  }
+
+  function listWorkshops() {
+    return load().workshops;
+  }
+
+  function setActive(id) {
+    const state = load();
+    state.activeWorkshopId = id;
+    save(state);
+  }
+
+  function addActivityResponse(workshopId, response) {
+    const ws = getWorkshop(workshopId);
+    if (!ws) return null;
+    const existing = ws.activityResponses.find(r => r.activity_id === response.activity_id);
+    if (existing) {
+      Object.assign(existing, response);
+    } else {
+      ws.activityResponses.push(response);
+    }
+    ws.updated_at = new Date().toISOString();
+    updateWorkshop(workshopId, ws);
+    return response;
+  }
+
+  function addDecision(workshopId, decision) {
+    const ws = getWorkshop(workshopId);
+    if (!ws) return null;
+    ws.decisions.push(decision);
+    updateWorkshop(workshopId, ws);
+    return decision;
+  }
+
+  function addAction(workshopId, action) {
+    const ws = getWorkshop(workshopId);
+    if (!ws) return null;
+    ws.actions.push(action);
+    updateWorkshop(workshopId, ws);
+    return action;
+  }
+
+  function exportWorkshop(id) {
+    const ws = getWorkshop(id);
+    if (!ws) return null;
+    const blob = new Blob([JSON.stringify(ws, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${ws.name || 'workshop'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return { load, save, upsertTemplate, createWorkshop, updateWorkshop, getWorkshop, listWorkshops, setActive, addActivityResponse, addDecision, addAction, exportWorkshop };
+})();
+
+export default Store;

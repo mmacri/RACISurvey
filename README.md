@@ -41,3 +41,9 @@ AWE expects an uploaded workbook to include domain, role, and activity informati
 
 ## Backend (optional)
 If you set `apiBase` in `localStorage` (for example to `http://localhost:8000`), the export buttons on `reports.html` enable PPTX/PDF calls to the backend service. Static JSON/CSV/Excel exports always work without a backend.
+
+## Running modes and data flow
+- **Static (GitHub Pages) mode:** open `index.html` (or the `docs/` equivalent) directly. All navigation is plain HTML links and JavaScript modules under `assets/`. Decisions, templates, and workshops persist to `localStorage` under the `awe.*` keys so the browser remembers your work between sessions.
+- **Local backend mode (optional):** start the FastAPI service with `./scripts/run_local.sh` and set `localStorage.apiBase` to your host (e.g., `http://localhost:8000`). The UI automatically lights up PPTX/PDF export buttons when it detects the backend.
+- **Data portability:** every workshop can be exported/imported as JSON from the Reports page. Templates are imported from Excel via the Templates page and saved locally; exporting filled Excel works entirely client-side using SheetJS.
+- **Executive outputs:** print-friendly HTML is available from the Reports / Exports page. In local mode, PPTX/PDF variants call into the backend for richer formatting.
