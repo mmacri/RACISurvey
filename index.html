@@ -3,90 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alignment Workshop Engine - Dashboard</title>
-  <link rel="stylesheet" href="assets/app.css">
+  <title>Alignment Workshop Engine</title>
+  <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-  <div class="layout">
+  <div class="app-shell">
     <aside class="sidebar">
-      <h1>AWE</h1>
+      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
       <nav class="nav">
         <a data-nav href="index.html">Dashboard</a>
         <a data-nav href="workshop.html">Workshops</a>
         <a data-nav href="wizard.html">Wizard</a>
-        <a data-nav href="review.html">Review</a>
-        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="reports.html">Reports / Exports</a>
         <a data-nav href="templates.html">Templates</a>
-        <a data-nav href="README.md">Help</a>
       </nav>
     </aside>
-    <div>
-      <header class="header">
-        <div class="badge-row">
-          <div class="badge" id="workshop-badge">No workshop selected</div>
-          <div class="badge warn" id="mode-badge">Static</div>
+    <main class="main">
+      <section class="hero panel">
+        <div>
+          <h1>Alignment Workshop Engine</h1>
+          <p>Import a RACI workbook, guide leadership through a facilitated wizard, capture decisions fast, and generate executive outputs instantly.</p>
+          <div class="button-row">
+            <button onclick="AWE.seedDemoWorkshop()" id="demo-workshop">Demo Workshop</button>
+            <button class="btn secondary" id="continue-last">Continue last workshop</button>
+            <a class="btn secondary" href="wizard.html">Start new workshop</a>
+          </div>
         </div>
-        <button id="go-wizard">Open Wizard</button>
-      </header>
-      <main class="main page">
-        <section class="hero">
-          <div class="card">
-            <div class="panel-title"><h2>Start a Workshop</h2><span class="small">Dashboard → Wizard flow</span></div>
-            <div class="row" style="margin-bottom:12px;">
-              <button id="new-workshop">New workshop</button>
-              <button class="secondary" id="go-review">Review</button>
-              <button class="secondary" id="go-reports">Executive Pack</button>
-            </div>
-            <div>
-              <div class="panel-title"><h3>Resume workshop</h3><span class="small">Autosaved locally</span></div>
-              <ul class="resume-list" id="resume-list"></ul>
-            </div>
+        <div>
+          <div class="panel">
+            <h2>Quick Start</h2>
+            <ol class="small">
+              <li>Create workshop & choose template</li>
+              <li>Map roles and confirm scope</li>
+              <li>Run wizard section by section</li>
+              <li>Review heatmap and finalize</li>
+              <li>Export JSON / Excel / PPTX / PDF</li>
+            </ol>
           </div>
-          <div class="card">
-            <div class="panel-title"><h2>Workshop Progress</h2><span class="badge" id="progress-pct">0%</span></div>
-            <div id="progress-steps" class="step-tracker"></div>
-            <div class="callout warn" id="missing">What's missing shows here.</div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="panel-title"><h2>Quick Actions</h2><span class="small">Static-first, exports ready</span></div>
-          <div class="quick-actions">
-            <button id="quick-import">Import Excel Template</button>
-            <input type="file" id="excel-upload" accept=".xlsx" style="display:none" />
-            <button id="load-demo">Load Mujib demo</button>
-            <button id="export-json">Export current state JSON</button>
-            <button id="quick-reports">Generate executive pack</button>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="panel-title"><h2>What you get at the end</h2><span class="small">Preview</span></div>
-          <div id="preview" class="preview-grid"></div>
-        </section>
-      </main>
-    </div>
-  </div>
-
-  <div class="modal" id="workshop-modal">
-    <div class="dialog">
-      <div class="panel-title"><h3>Workshop setup</h3><button class="secondary" id="close-modal">Close</button></div>
-      <form id="workshop-form" class="grid two">
-        <label>Name<input name="name" required placeholder="OT Leadership Alignment"></label>
-        <label>Organization<input name="org" required placeholder="Org or Customer"></label>
-        <label>Sponsor<input name="sponsor" placeholder="Mujib"></label>
-        <label>Mode<select name="mode"><option>Executive</option><option>Full</option></select></label>
-        <label>Attendees (comma separated)<input name="attendees" placeholder="CIO, CTO, OT Lead"></label>
-        <label>Template<select name="templateId" id="template-select" required></select></label>
-        <div class="grid two" style="grid-column:1/-1; gap:10px;">
-          <button type="submit">Create & open wizard</button>
-          <label class="btn secondary" style="text-align:center; cursor:pointer;">Import Excel<input type="file" accept=".xlsx" style="display:none" id="excel-upload-modal"></label>
         </div>
-      </form>
-    </div>
+      </section>
+      <section class="panel">
+        <div class="section-title">
+          <h2>Landing actions</h2>
+          <div class="button-row">
+            <a class="btn secondary" href="workshop.html">Start new workshop</a>
+            <a class="btn secondary" href="wizard.html">Open wizard</a>
+            <label class="btn secondary" style="cursor:pointer;">Import template<input type="file" id="template-upload" style="display:none"></label>
+          </div>
+        </div>
+        <p class="small">This dashboard is optimized for live workshops: continue where you left off or spin up a new session using the OT RACI template.</p>
+        <div id="quick-stats" class="grid three"></div>
+      </section>
+      <section class="panel">
+        <h2>Recent workshops</h2>
+        <ul id="recent-workshops" class="list"></ul>
+      </section>
+    </main>
   </div>
-
-  <script src="vendor/xlsx.full.min.js"></script>
   <script type="module" src="assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    document.getElementById('template-upload').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        import('./assets/templateParser.js').then(mod => {
+          const tmpl = mod.parseWorkbook(workbook);
+          import('./assets/store.js').then(store => {
+            store.default.upsertTemplate(tmpl);
+            alert('Template imported: ' + tmpl.name);
+          });
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // render recents once module store available
+    import('./assets/store.js').then(store => {
+      const list = document.getElementById('recent-workshops');
+      const workshops = store.default.listWorkshops().slice(-5).reverse();
+      list.innerHTML = workshops.length ? workshops.map(w => `<li><div class="label-row"><strong>${w.name}</strong><span class="small">${w.updated_at}</span></div><div class="small">${w.org} · ${w.scope?.join(', ')||'All sections'}</div></li>`).join('') : '<li class="small">No workshops yet. Start one!</li>';
+    });
+  </script>
 </body>
 </html>

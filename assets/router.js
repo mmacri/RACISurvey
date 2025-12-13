@@ -1,22 +1,15 @@
-export function basePath() {
-  const path = window.location.pathname;
-  const parts = path.split('/').filter(Boolean);
-  if (parts.length && parts[0] !== '') {
-    const repo = parts[0];
-    if (repo && repo !== '') {
-      return path.includes(`/${repo}/`) ? `/${repo}` : '';
-    }
+const Router = (() => {
+  function init() {
+    const links = document.querySelectorAll('[data-nav]');
+    const path = window.location.pathname;
+    links.forEach(l => {
+      const href = l.getAttribute('href');
+      if (path.endsWith(href.split('/').pop())) {
+        l.classList.add('active');
+      }
+    });
   }
-  return '';
-}
+  return { init };
+})();
 
-export function assetUrl(relative) {
-  const base = basePath();
-  return `${base}/${relative}`.replace('//','/');
-}
-
-export function markNav(active) {
-  document.querySelectorAll('[data-nav]')?.forEach(link => {
-    if (link.getAttribute('href')?.includes(active)) link.classList.add('active');
-  });
-}
+export default Router;

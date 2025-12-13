@@ -1,167 +1,185 @@
-import store from './store.js';
-import { handleExcelUpload } from './excel.js';
-import { markNav } from './router.js';
+import Router from './router.js';
+import Store from './store.js';
+import { demoTemplate } from './templateParser.js';
+import { computeActivityGaps } from './gapEngine.js';
+import { renderExecutiveSummary, renderDecisionLog, renderActionPlan } from './reportRenderer.js';
 
-function qs(id) { return document.querySelector(id); }
-function renderWorkshopBadge() {
-  const badge = qs('#workshop-badge');
-  const current = store.currentWorkshop();
-  badge.textContent = current ? `${current.name} • ${current.workshopDate}` : 'No workshop selected';
-}
-
-function renderMode() {
-  const badge = qs('#mode-badge');
-  badge.textContent = store.state.apiBase ? 'Backend' : 'Static';
-  badge.classList.toggle('warn', !!store.state.apiBase);
-}
-
-function completionState(workshop) {
-  if (!workshop) return { pct: 0, missing: ['Create or load a workshop'], gateMet: false };
-  const template = store.getTemplate(workshop.templateId);
-  const missing = [];
-  let completed = 0;
-  if (workshop.name && workshop.org && template) completed++; else missing.push('Setup details');
-  if ((workshop.selectedDomains||[]).length) completed++; else missing.push('Choose scope');
-  const mappedRoles = Object.values(workshop.roleMappings||{}).filter(Boolean).length;
-  if (mappedRoles) completed++; else missing.push('Map roles to people');
-  completed++; // activities review always reachable
-  const activitySet = [...(template?.activities||[]), ...(workshop.activityOverrides?.added||[])].filter(a => !(workshop.activityOverrides?.hidden||[]).includes(a.id));
-  const decisionsMet = activitySet.length ? activitySet.filter(a => {
-    const assigns = workshop.raciAssignments?.[a.id] || {};
-    const hasA = Object.values(assigns).filter(v => v==='A').length === 1;
-    const hasR = Object.values(assigns).some(v => v==='R');
-    return hasA && hasR;
-  }).length / activitySet.length : 0;
-  const raciPct = Math.round(decisionsMet * 100);
-  if (raciPct > 0) completed++;
-  else missing.push('Capture RACI decisions');
-  if (workshop.status === 'final') completed++;
-  if (raciPct >= 70 && mappedRoles && (workshop.selectedDomains||[]).length) completed++;
-  const pct = Math.min(100, Math.round((completed / 7) * 100));
-  return { pct, missing, gateMet: raciPct >= 70 && activitySet.length > 0 };
-}
-
-function renderProgress() {
-  const container = qs('#progress-steps');
-  const steps = ['Setup','Scope','Roles','Activities','RACI Decisions','Review','Executive Pack'];
-  const current = store.currentWorkshop();
-  const state = completionState(current);
-  const stepIndex = current?.wizardStep || 1;
-  qs('#progress-pct').textContent = `${state.pct}% ready`;
-  container.innerHTML = steps.map((step, idx) => {
-    const status = idx+1 < stepIndex ? 'complete' : idx+1 === stepIndex ? 'active' : '';
-    const warn = !current && idx>0 ? '<div class="small">Start a workshop</div>' : '';
-    return `<div class="step-item ${status}"><div class="step-label">${step}<span class="small">${idx+1}/${steps.length}</span></div>${warn}</div>`;
-  }).join('');
-  const missing = qs('#missing');
-  missing.textContent = state.missing.length ? `What's missing: ${state.missing.join(', ')}` : 'Ready for Executive Pack.';
-  qs('#quick-reports').disabled = !state.gateMet;
-  qs('#go-reports').disabled = !state.gateMet;
-}
-
-function renderResume() {
-  const list = qs('#resume-list');
-  const workshops = store.listWorkshops();
-  list.innerHTML = workshops.length ? workshops.map(w => `<li><div class="flex between"><div><strong>${w.name}</strong><div class="small">${w.org} • ${w.workshopDate}</div></div><button data-resume="${w.id}">Open</button></div></li>`).join('') : '<li class="small">No saved workshops yet.</li>';
-  list.querySelectorAll('button[data-resume]')?.forEach(btn => {
-    btn.addEventListener('click', () => {
-      store.setCurrentWorkshop(btn.dataset.resume);
-      window.location.href = 'wizard.html';
-    });
-  });
-}
-
-function bindActions() {
-  qs('#new-workshop').addEventListener('click', () => {
-    qs('#workshop-modal').classList.add('active');
-  });
-  qs('#close-modal').addEventListener('click', () => qs('#workshop-modal').classList.remove('active'));
-  qs('#workshop-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target).entries());
-    if (!data.templateId) {
-      alert('Choose a template first (import on Templates page or load demo).');
-      return;
-    }
-    const ws = store.createWorkshop({
-      name: data.name,
-      org: data.org,
-      sponsor: data.sponsor,
-      mode: data.mode,
-      templateId: data.templateId,
-      attendees: data.attendees ? data.attendees.split(',').map(v => v.trim()).filter(Boolean) : [],
-    });
-    store.setCurrentWorkshop(ws.id);
-    window.location.href = 'wizard.html';
-  });
-  qs('#excel-upload').addEventListener('change', async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const tmpl = await handleExcelUpload(file);
-    populateTemplateSelect();
-    alert(`Template imported: ${tmpl.name}`);
-  });
-  const modalUpload = document.getElementById('excel-upload-modal');
-  if (modalUpload) {
-    modalUpload.addEventListener('change', async (e) => {
-      const file = e.target.files[0]; if (!file) return;
-      const tmpl = await handleExcelUpload(file);
-      populateTemplateSelect();
-      alert(`Template imported: ${tmpl.name}`);
-    });
-  }
-  qs('#quick-import').addEventListener('click', () => qs('#excel-upload').click());
-  qs('#load-demo').addEventListener('click', loadDemo);
-  qs('#export-json').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(store.state, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `awe-state.json`;
-    a.click();
-  });
-  qs('#go-wizard').addEventListener('click', () => window.location.href = 'wizard.html');
-  qs('#go-review').addEventListener('click', () => window.location.href = 'review.html');
-  qs('#go-reports').addEventListener('click', () => window.location.href = 'reports.html');
-  qs('#quick-reports').addEventListener('click', () => window.location.href = 'reports.html');
-}
-
-async function loadDemo() {
-  const res = await fetch('data/demo_mujib.json');
-  const data = await res.json();
-  store.loadDemo(data);
-  populateTemplateSelect();
-  renderWorkshopBadge();
-  renderResume();
-  renderProgress();
-  alert('Mujib demo loaded. Open the wizard to explore.');
-}
-
-function populateTemplateSelect() {
-  const select = qs('#template-select');
-  select.innerHTML = '<option value="">Select imported template</option>' + store.listTemplates().map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-}
-
-function renderQuickPreview() {
-  const items = [
-    { title: 'RACI Matrix', desc: 'Final ownership map with highlights.', href: 'wizard.html#matrix' },
-    { title: 'Gap List', desc: 'Auto-detected missing A/R or overloaded roles.', href: 'review.html' },
-    { title: 'Action Plan', desc: 'Follow-ups with owners and due dates.', href: 'wizard.html#actions' },
-    { title: 'Executive Summary', desc: 'Narrative context for leadership.', href: 'reports.html' },
+function demoAttendees() {
+  return [
+    { name: 'Mujib', title: 'CIO' },
+    { name: 'Ariana', title: 'CTO' },
+    { name: 'Samir', title: 'PSA Sr Manager' },
+    { name: 'Dana', title: 'OT Infra & Compliance Manager' },
+    { name: 'Kyle', title: 'EMS Ops Owner' },
+    { name: 'Priya', title: 'GIS Owner' },
+    { name: 'Luis', title: 'Security Architect' },
+    { name: 'Becca', title: 'SCADA Supervisor' },
+    { name: 'Noor', title: 'NERC CIP Lead' },
+    { name: 'Alex', title: 'Change Manager' },
+    { name: 'Taylor', title: 'OT Support Lead' },
+    { name: 'Jordan', title: 'Service Desk Manager' }
   ];
-  qs('#preview').innerHTML = items.map(i => `<a href="${i.href}" class="preview-card"><strong>${i.title}</strong><div class="small">${i.desc}</div></a>`).join('');
 }
 
-function init() {
-  markNav('index');
-  renderWorkshopBadge();
-  renderMode();
-  renderResume();
-  renderProgress();
-  populateTemplateSelect();
-  renderQuickPreview();
-  bindActions();
-  if (window.location.hash === '#new') {
-    qs('#workshop-modal').classList.add('active');
+function initDashboard() {
+  const state = Store.load();
+  if (!state.templates.find(t => t.id === 'demo-template')) {
+    Store.upsertTemplate(demoTemplate());
+  }
+  const workshops = Store.listWorkshops();
+  const quickStats = document.getElementById('quick-stats');
+  if (quickStats) {
+    const openActions = workshops.reduce((acc, w) => acc + (w.actions?.filter(a => a.status !== 'done').length || 0), 0);
+    const unresolvedGaps = workshops.reduce((acc, w) => acc + (w.gaps?.length || 0), 0);
+    quickStats.innerHTML = `
+      <div class="card"><h3>Workshops</h3><div class="hero-stat">${workshops.length}</div><p class="small">saved locally</p></div>
+      <div class="card"><h3>Open Actions</h3><div class="hero-stat">${openActions}</div></div>
+      <div class="card"><h3>Unresolved Gaps</h3><div class="hero-stat">${unresolvedGaps}</div></div>`;
+  }
+  const continueBtn = document.getElementById('continue-last');
+  if (continueBtn && workshops.length) {
+    continueBtn.onclick = () => {
+      Store.setActive(workshops[workshops.length - 1].id);
+      window.location.href = 'wizard.html';
+    };
+  }
+  const demoBtn = document.getElementById('demo-workshop');
+  if (demoBtn) demoBtn.onclick = seedDemoWorkshop;
+}
+
+function seedDemoWorkshop() {
+  const template = demoTemplate();
+  Store.upsertTemplate(template);
+  const workshop = Store.createWorkshop({
+    name: 'OT RACI Alignment — Mujib Demo',
+    org: 'Demo Utility',
+    sponsor: 'Mujib',
+    template_id: template.id,
+    attendees: demoAttendees(),
+    scope: template.sections.map(s => s.name),
+    mode: 'full'
+  });
+  template.activities.slice(0, 25).forEach((activity, idx) => {
+    const response = {
+      id: crypto.randomUUID(),
+      workshop_id: workshop.id,
+      section_name: activity.section,
+      activity_id: activity.id,
+      accountable_role: idx % 7 === 0 ? null : template.roles[idx % template.roles.length],
+      responsible_roles: [template.roles[(idx + 1) % template.roles.length]],
+      consulted_roles: [template.roles[(idx + 2) % template.roles.length]],
+      informed_roles: [],
+      confidence: idx % 5 === 0 ? 'low' : 'high',
+      status: idx % 6 === 0 ? 'followup' : 'confirmed',
+      notes: `Auto-demo note ${idx + 1}`
+    };
+    response.gaps = computeActivityGaps(response);
+    Store.addActivityResponse(workshop.id, response);
+    if (idx % 3 === 0) {
+      Store.addDecision(workshop.id, { id: crypto.randomUUID(), workshop_id: workshop.id, section_name: activity.section, activity_id: activity.id, decision_text: 'Align ownership', rationale: 'Demo rationale' });
+    }
+    if (idx % 2 === 0) {
+      Store.addAction(workshop.id, { id: crypto.randomUUID(), workshop_id: workshop.id, title: `Follow-up ${idx + 1}`, description: 'Collect evidence', owner: 'OT Infra Team', due_date: '2024-12-01', severity: idx % 6 === 0 ? 'critical' : 'high', status: 'open', related_activity_id: activity.id });
+    }
+  });
+  window.location.href = 'wizard.html';
+}
+
+function renderWizard() {
+  const state = Store.load();
+  const wsId = state.activeWorkshopId;
+  const ws = Store.getWorkshop(wsId) || state.workshops[0];
+  if (!ws) return;
+  document.getElementById('wizard-title').textContent = ws.name;
+  const template = state.templates.find(t => t.id === ws.template_id) || demoTemplate();
+  const list = document.getElementById('activity-list');
+  if (list) {
+    list.innerHTML = '';
+    template.activities.forEach((act, idx) => {
+      if (ws.scope && !ws.scope.includes(act.section)) return;
+      const item = document.createElement('li');
+      item.innerHTML = `<div class="label-row"><strong>${act.section}</strong><span class="small">${idx + 1}/${template.activities.length}</span></div><div>${act.text}</div>`;
+      item.onclick = () => showActivity(ws, act, template.roles);
+      list.appendChild(item);
+    });
   }
 }
 
-window.addEventListener('DOMContentLoaded', init);
+function showActivity(ws, activity, roles) {
+  const panel = document.getElementById('activity-panel');
+  const response = (ws.activityResponses || []).find(r => r.activity_id === activity.id) || {
+    workshop_id: ws.id,
+    section_name: activity.section,
+    activity_id: activity.id,
+    responsible_roles: [],
+    consulted_roles: [],
+    informed_roles: [],
+    status: 'proposed',
+    confidence: 'med'
+  };
+  panel.innerHTML = `
+    <div class="panel">
+      <h2>${activity.text}</h2>
+      <p class="small">Section: ${activity.section}</p>
+      <label>Accountable ${buildSelect('accountable', roles, response.accountable_role)}</label>
+      <label>Responsible ${buildMulti('responsible', roles, response.responsible_roles)}</label>
+      <label>Consulted ${buildMulti('consulted', roles, response.consulted_roles)}</label>
+      <label>Informed ${buildMulti('informed', roles, response.informed_roles)}</label>
+      <label>Confidence <select id="confidence"><option value="low" ${response.confidence==='low'?'selected':''}>Low</option><option value="med" ${response.confidence==='med'?'selected':''}>Med</option><option value="high" ${response.confidence==='high'?'selected':''}>High</option></select></label>
+      <label>Status <select id="status"><option value="proposed" ${response.status==='proposed'?'selected':''}>Proposed</option><option value="confirmed" ${response.status==='confirmed'?'selected':''}>Confirmed</option><option value="followup" ${response.status==='followup'?'selected':''}>Needs follow-up</option></select></label>
+      <label>Notes <textarea id="notes">${response.notes||''}</textarea></label>
+      <div class="button-row"><button id="save-act">Save</button></div>
+      <div id="gap-view"></div>
+    </div>`;
+  document.getElementById('save-act').onclick = () => {
+    const updated = {
+      ...response,
+      accountable_role: document.getElementById('accountable').value || null,
+      responsible_roles: collectChecked('responsible'),
+      consulted_roles: collectChecked('consulted'),
+      informed_roles: collectChecked('informed'),
+      confidence: document.getElementById('confidence').value,
+      status: document.getElementById('status').value,
+      notes: document.getElementById('notes').value
+    };
+    updated.gaps = computeActivityGaps(updated);
+    Store.addActivityResponse(ws.id, updated);
+    renderGaps(updated.gaps);
+  };
+  renderGaps(response.gaps || []);
+}
+
+function buildSelect(id, roles, value) {
+  return `<select id="${id}"><option value="">None / Unclear</option>${roles.map(r => `<option value="${r}" ${value===r?'selected':''}>${r}</option>`).join('')}</select>`;
+}
+
+function buildMulti(id, roles, values=[]) {
+  return `<div>${roles.map(r => `<label style='display:block;'><input type="checkbox" name="${id}" value="${r}" ${values.includes(r)?'checked':''}/> ${r}</label>`).join('')}</div>`;
+}
+
+function collectChecked(name) {
+  return Array.from(document.querySelectorAll(`input[name='${name}']:checked`)).map(i => i.value);
+}
+
+function renderGaps(gaps) {
+  const gapView = document.getElementById('gap-view');
+  if (!gapView) return;
+  if (!gaps.length) { gapView.innerHTML = '<p class="small">No gaps detected.</p>'; return; }
+  gapView.innerHTML = gaps.map(g => `<div class="alert"><strong>${g.severity.toUpperCase()}</strong> — ${g.message}</div>`).join('');
+}
+
+function renderReports() {
+  const state = Store.load();
+  const ws = Store.getWorkshop(state.activeWorkshopId) || state.workshops[0];
+  if (!ws) return;
+  document.getElementById('reports').innerHTML = renderExecutiveSummary(ws) + renderDecisionLog(ws) + renderActionPlan(ws);
+}
+
+window.AWE = { initDashboard, seedDemoWorkshop, renderWizard, renderReports };
+Router.init();
+
+if (document.readyState !== 'loading') {
+  initDashboard();
+} else {
+  document.addEventListener('DOMContentLoaded', initDashboard);
+}
