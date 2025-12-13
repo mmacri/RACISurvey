@@ -1,0 +1,14 @@
+item_id,activity_text,role,assignment,notes
+app-01,Identify business requirements and use cases.,CIO,A,Exec sponsor accountability confirmed
+app-01,Identify business requirements and use cases.,Operational Technology Manager,R,OT drives requirements
+app-01,Identify business requirements and use cases.,Operations Delivery Systems Manager,R,Ops drives requirements
+app-01,Identify business requirements and use cases.,Cyber Security Program Mgr,C,Security consults
+app-02,Evaluate vendor solutions (RFP, demos, proofs of concept).,CIO,A,Selection accountability
+app-02,Evaluate vendor solutions (RFP, demos, proofs of concept).,Operational Technology Manager,R,Leads evaluation
+app-02,Evaluate vendor solutions (RFP, demos, proofs of concept).,Operations Delivery Systems Manager,R,Co-leads (workshop decides if C)
+app-04,Establish and follow a formal patch management process for all applications.,CIO,A,Demo includes gap: CIO is A
+app-04,Establish and follow a formal patch management process for all applications.,OT Infrastructure & Compliance Manager,R,Manager owns process
+app-04,Establish and follow a formal patch management process for all applications.,OT Infrastructure Team,R,Team executes
+app-07,Incident Response & Recovery,CIO,A,Executive accountability
+app-07,Incident Response & Recovery,Cyber Security Program Mgr,R,Detect/contain/forensics
+app-07,Incident Response & Recovery,Operational Technology Manager,R,Operational recovery
