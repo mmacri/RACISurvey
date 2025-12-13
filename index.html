@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alignment Workshop Engine (AWE)</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">AWE</div>
+    <nav>
+      <ul id="nav-items">
+        <li data-target="dashboard" class="active">Dashboard</li>
+        <li data-target="workshops">Workshops</li>
+        <li data-target="frameworks">Frameworks</li>
+        <li data-target="wizard">Live Wizard</li>
+        <li data-target="gaps">Gaps &amp; Conflicts</li>
+        <li data-target="reports">Reports</li>
+        <li data-target="exports">Exports</li>
+        <li data-target="settings">Settings</li>
+      </ul>
+    </nav>
+    <div class="meta">
+      <p>Built for executive alignment. Excel stays canonical.</p>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div>
+        <h1>Alignment Workshop Engine (AWE)</h1>
+        <p class="subtitle">Guided accountability and decision capture for leadership workshops.</p>
+      </div>
+      <div class="badge">Self-hosted</div>
+    </header>
+
+    <section id="dashboard" class="view active">
+      <div class="purpose">
+        <h2>Purpose</h2>
+        <p>This tool exists to align leadership on ownership, accountability, and gaps — and produce executive-ready outputs.</p>
+      </div>
+      <div class="cta-row">
+        <button class="primary" id="start-workshop">Start New Workshop</button>
+        <button class="secondary" id="resume-workshop">Resume Workshop</button>
+        <button class="secondary" id="async-collection">Run Async Collection</button>
+        <button class="ghost" id="generate-pack">Generate Executive Pack</button>
+      </div>
+      <div class="cards" id="workshop-cards">
+        <!-- Populated by app.js -->
+      </div>
+      <div class="next-steps">
+        <h3>What to do next</h3>
+        <ol>
+          <li>Pick a framework and create a workshop.</li>
+          <li>Invite participants or collect async inputs.</li>
+          <li>Run the live wizard to resolve accountability and gaps.</li>
+          <li>Export the executive pack for decision-makers.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="workshops" class="view">
+      <header>
+        <h2>Workshops</h2>
+        <p>Plan and track each session. Every workshop is tied to an Excel template and stays ready for live facilitation.</p>
+      </header>
+      <div class="grid two-cols" id="workshop-list">
+        <!-- Populated by app.js -->
+      </div>
+      <div class="helper">
+        <p>No dead ends: start a workshop to unlock the wizard, or import pre-work to focus time on resolution.</p>
+      </div>
+    </section>
+
+    <section id="frameworks" class="view">
+      <header>
+        <h2>Frameworks</h2>
+        <p>Select and reuse Excel-based templates for NERC CIP, NIST CSF, ISO 27001, SOX, AI governance, OT, cloud, and more.</p>
+      </header>
+      <div class="grid three-cols" id="framework-list">
+        <!-- Populated by app.js -->
+      </div>
+      <div class="helper">
+        <p>Excel remains canonical. Upload updates at any time to refresh controls without losing decision history.</p>
+      </div>
+    </section>
+
+    <section id="wizard" class="view">
+      <header class="wizard-header">
+        <div>
+          <h2>Live Wizard</h2>
+          <p>Step-by-step facilitation that forces clarity. Ambiguity is flagged and cannot be ignored.</p>
+        </div>
+        <div class="wizard-progress" id="wizard-progress">Step 1 of 6</div>
+      </header>
+      <div id="wizard-body">
+        <!-- Wizard content populated by wizard.js -->
+      </div>
+    </section>
+
+    <section id="gaps" class="view">
+      <header>
+        <h2>Gaps &amp; Conflicts</h2>
+        <p>Auto-detected ambiguity, missing Accountables, and low-confidence responses are surfaced here for action.</p>
+      </header>
+      <div id="gaps-container" class="list-panel">
+        <!-- Populated by app.js -->
+      </div>
+      <div class="helper">
+        <p>Resolve issues in the wizard or assign temporary owners with due dates. Nothing disappears without a decision.</p>
+      </div>
+    </section>
+
+    <section id="reports" class="view">
+      <header>
+        <h2>Reports</h2>
+        <p>Executive-friendly views that summarize completion, risk, and accountability coverage.</p>
+      </header>
+      <div class="grid two-cols" id="report-cards">
+        <!-- Populated by app.js -->
+      </div>
+      <div class="helper">
+        <p>Every report explains what changed, what is unresolved, and what leadership needs to sign off.</p>
+      </div>
+    </section>
+
+    <section id="exports" class="view">
+      <header>
+        <h2>Exports</h2>
+        <p>One-click outputs: Executive Summary (HTML/PDF), RACI Matrix (Excel), Gap Register, Decision Log.</p>
+      </header>
+      <div class="export-actions">
+        <button class="primary" id="download-summary">Download Executive Summary</button>
+        <button class="secondary" id="download-raci">Export RACI Matrix (Excel)</button>
+        <button class="secondary" id="download-gaps">Export Gap Register (CSV)</button>
+        <button class="ghost" id="download-decisions">Export Decision Log (CSV)</button>
+      </div>
+      <div class="helper">
+        <p>Exports preserve the canonical Excel structure and append workshop metadata for traceability.</p>
+      </div>
+    </section>
+
+    <section id="settings" class="view">
+      <header>
+        <h2>Settings</h2>
+        <p>Configure storage, permissions, and facilitation preferences. Everything is self-hosted and lives in your browser or local network.</p>
+      </header>
+      <div class="settings-panel">
+        <div>
+          <h3>Storage</h3>
+          <p>Use localStorage by default. Toggle IndexedDB for heavier scenarios. No external SaaS dependencies.</p>
+          <label><input type="checkbox" id="use-indexeddb" /> Enable IndexedDB</label>
+        </div>
+        <div>
+          <h3>Facilitation defaults</h3>
+          <ul>
+            <li>Require executive sign-off on every workshop.</li>
+            <li>Flag multiple Accountables as conflicts.</li>
+            <li>Force confidence slider before saving.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="helper">
+        <p>Everything here is optional. The app runs fully offline with no additional setup.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+  <script src="assets/wizard.js"></script>
+  <script src="assets/export.js"></script>
+</body>
+</html>

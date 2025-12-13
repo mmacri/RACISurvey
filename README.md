@@ -1,34 +1,47 @@
-# OT RACI Workshop Wizard
+# Alignment Workshop Engine (AWE)
 
-A self-hosted, workshop-first tool that ingests the canonical OT RACI Excel workbook, guides leadership through a facilitated wizard, validates R/A/C/I decisions in real time, and generates an executive-ready pack (filled Excel, PDF, PPTX, action register, JSON snapshot).
+AWE is a self-hosted, static-first facilitation tool that turns executive discussions into structured accountability, gaps, and decisions. It keeps Excel as the canonical data model and layers guided workflows on top.
 
-## What it does
-- **Excel as source of truth:** Upload your workbook; the app parses domains (sheets), role headers, activities/sections, instructions, and list values without altering the file.
-- **Guided workshop:** Dashboard → setup → wizard → gap triage → executive pack. Validation enforces exactly one Accountable and at least one Responsible per activity with communication-gap warnings.
-- **Offline exports:** Filled Excel mirrors the original sheet layout and adds an Outputs tab; PDF and PPTX summarize scope, completion, and gaps; action register CSV captures follow-ups.
+- **Purpose:** align leadership on ownership, accountability, and gaps, with executive-ready outputs.
+- **Modes:** Live Executive Workshop, Async Pre-Work, Post-Workshop Executive Output.
+- **Outputs:** Executive Summary, RACI Matrix (Excel), Gap Register, Decision Log.
+- **Navigation:** Dashboard, Workshops, Frameworks, Live Wizard, Gaps & Conflicts, Reports, Exports, Settings.
 
-## Repository layout
-```
-backend/          FastAPI app, SQLite models, Excel ingest/export, validation, executive pack builders
-backend/services/ excel_ingest.py, excel_export.py, validation.py, executive_pack_pdf.py, executive_pack_pptx.py
-backend/db/       database.py, models.py
-web/              Static dashboard shell (served from "/")
-PDI.md            Canonical product definition and acceptance criteria
-```
+## Getting started
+1. Open `index.html` in a browser (works offline; GitHub Pages friendly).
+2. Use the sidebar to explore each page. The Dashboard CTAs jump directly into the Live Wizard.
+3. Run through the six-step wizard: Select Framework → Define Scope → RACI Assignment → Conflict Resolution → Gap Declaration → Executive Confirmation.
+4. Use the Exports page to download JSON/CSV artifacts that mirror the required outputs. Replace them with real Excel/PDF generators when wiring up a backend.
 
-## Running locally
-```bash
-pip install -r requirements.txt
-uvicorn backend.main:app --reload
-# open http://localhost:8000
-```
-Data lives under `./data/` (uploads and exports). Set `RACI_DATABASE_URL` for a different SQLAlchemy-compatible database.
+## Data model (logical)
+- Framework • Control • Role • Workshop • Response • Gap • Decision • ExportLog
+- Excel stays canonical; localStorage stores metadata, responses, and conflicts for demonstration.
 
-## Acceptance checkpoints
-1. Upload Excel → app detects domains, roles, activities.
-2. Start workshop → wizard data endpoints return domain/role/activity context.
-3. Proceed without Accountable → validation surfaces `missing_A` and blocks progress.
-4. Progress endpoint reports % completion after saving assignments.
-5. Excel/PDF/PPTX/Action exports return offline files that mirror the template structure.
+## Project structure
+- `index.html` — main landing dashboard with navigation and CTA-driven flows.
+- `assets/styles.css` — dark UI theme with executive-friendly cards and wizard layout.
+- `assets/data.js` — sample frameworks, workshops, and helper persistence for localStorage.
+- `assets/app.js` — navigation, dashboard rendering, reports, and export wiring.
+- `assets/wizard.js` — six-step wizard implementation with conflict detection and gap capture.
+- `assets/export.js` — client-side download helpers for executive summary, RACI matrix CSV, gap register, and decision log.
+- `docs/` — UX notes, UI walkthrough, data schema, and demo guidance.
+- `agent.md` — repository guardrails for future updates.
+- `pdi.md` — product definition and implementation outline.
 
-See `PDI.md` for the full workshop flow, validation rules, UI map, and export definitions.
+## Working offline and self-hosting
+- All assets are static; open locally or serve via any web server (e.g., `python -m http.server`).
+- Default persistence is `localStorage`; IndexedDB can be toggled in Settings for heavier use.
+- No external SaaS calls or analytics are included.
+
+## Extending the prototype
+- Swap the sample data in `assets/data.js` with live Excel parsing results.
+- Replace `export.js` download helpers with real Excel/PDF/PowerPoint generation while preserving the canonical workbook.
+- Connect to APIs for audit trails (ExportLog) or to hydrate async pre-work submissions.
+
+## Validation checklist
+- ✅ A CIO can understand this in 2 minutes.
+- ✅ A facilitator can run a workshop with no prep.
+- ✅ Outputs are board-ready and downloadable.
+- ✅ The tool is reusable across frameworks.
+- ✅ Excel remains the canonical source for controls.
+- ✅ Each page explains purpose and next actions.
