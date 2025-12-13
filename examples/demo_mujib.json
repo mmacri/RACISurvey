@@ -1,0 +1,568 @@
+{
+    "engagement": {
+        "engagement_id": "mujib-ot-raci-demo-2025-12",
+        "client_name": "Utility Technology Division",
+        "exec_sponsor": {
+            "name": "Mujib",
+            "title": "CIO",
+            "role_header_match": "CIO"
+        },
+        "created_date": "2025-12-13",
+        "framework": "OT Operating Model / RACI Capture (Applications, Infrastructure, Policy)",
+        "notes": "Demo dataset for executive workshops. Includes intentional gaps (TBD) to validate the wizard and executive pack."
+    },
+    "people_directory": [
+        {
+            "person_id": "p-mujib",
+            "name": "Mujib",
+            "title": "CIO",
+            "mapped_role": "CIO"
+        },
+        {
+            "person_id": "p-cto",
+            "name": "Ava Chen",
+            "title": "CTO",
+            "mapped_role": "CTO"
+        },
+        {
+            "person_id": "p-otmgr",
+            "name": "Rafael Torres",
+            "title": "Operational Technology Manager",
+            "mapped_role": "Operational Technology Manager"
+        },
+        {
+            "person_id": "p-oticm",
+            "name": "Sonia Patel",
+            "title": "OT Infrastructure & Compliance Manager",
+            "mapped_role": "OT Infrastructure & Compliance Manager"
+        },
+        {
+            "person_id": "p-otinfra",
+            "name": "Team",
+            "title": "OT Infrastructure Team",
+            "mapped_role": "OT Infrastructure Team"
+        },
+        {
+            "person_id": "p-otcomp",
+            "name": "Team",
+            "title": "OT Compliance Support",
+            "mapped_role": "OT Compliance Support"
+        },
+        {
+            "person_id": "p-cyberpm",
+            "name": "Derrick Lee",
+            "title": "Cyber Security Program Mgr",
+            "mapped_role": "Cyber Security Program Mgr"
+        },
+        {
+            "person_id": "p-seccons",
+            "name": "Consultant",
+            "title": "Compliance and Security Consultant",
+            "mapped_role": "Compliance and Security Consultant"
+        },
+        {
+            "person_id": "p-opsmgr",
+            "name": "Morgan Diaz",
+            "title": "Operations Delivery Systems Manager",
+            "mapped_role": "Operations Delivery Systems Manager"
+        },
+        {
+            "person_id": "p-edsup",
+            "name": "Jordan Kim",
+            "title": "Energy Delivery Systems Supervisor",
+            "mapped_role": "Energy Delivery Systems Supervisor"
+        },
+        {
+            "person_id": "p-director",
+            "name": "Priya Singh",
+            "title": "Director",
+            "mapped_role": "Director"
+        }
+    ],
+    "workshops": [
+        {
+            "workshop_id": "ws-01",
+            "name": "OT RACI Alignment Workshop (Exec + Leads)",
+            "date": "2025-12-16",
+            "duration_minutes": 120,
+            "participants": [
+                "p-mujib",
+                "p-cto",
+                "p-director",
+                "p-otmgr",
+                "p-oticm",
+                "p-cyberpm",
+                "p-opsmgr",
+                "p-seccons"
+            ],
+            "objectives": [
+                "Confirm accountability (A) and decision rights across OT lifecycle",
+                "Identify gaps and overlaps (missing A, too many R, unclear ownership)",
+                "Produce an executive-ready RACI pack for Mujib with top gaps and remediation actions"
+            ]
+        }
+    ],
+    "raci_capture": {
+        "role_headers_used": [
+            "Utility Technology Division",
+            "CIO",
+            "CTO",
+            "Director",
+            "Operational Technology Manager",
+            "OT Infrastructure & Compliance Manager",
+            "OT Infrastructure Team",
+            "OT Compliance Support",
+            "Cyber Security Program Mgr",
+            "Compliance and Security Consultant",
+            "Operations Delivery Systems Manager",
+            "Energy Delivery Systems Supervisor"
+        ],
+        "applications_raci": {
+            "source_sheet": "APPLICATIONS RACI",
+            "items": [
+                {
+                    "item_id": "app-01",
+                    "activity_text": "Identify business requirements and use cases.",
+                    "raci": {
+                        "CIO": "A",
+                        "Director": "C",
+                        "Operational Technology Manager": "R",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "Cyber Security Program Mgr": "C",
+                        "Operations Delivery Systems Manager": "R",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Energy Delivery Systems Supervisor": "R",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "notes": "Exec sponsor (Mujib) confirms A; OT + Ops drive requirements."
+                },
+                {
+                    "item_id": "app-02",
+                    "activity_text": "Evaluate vendor solutions (RFP, demos, proofs of concept).",
+                    "raci": {
+                        "CIO": "A",
+                        "Director": "C",
+                        "Operational Technology Manager": "R",
+                        "Operations Delivery Systems Manager": "R",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "notes": "Two R roles are intentional; workshop decides if Ops is C instead of R."
+                },
+                {
+                    "item_id": "app-03",
+                    "activity_text": "Align selection with enterprise architecture standards.",
+                    "raci": {
+                        "CIO": "A",
+                        "CTO": "R",
+                        "Director": "C",
+                        "Operational Technology Manager": "C",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "I",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I",
+                        "Utility Technology Division": "I"
+                    },
+                    "notes": "Keeps architecture ownership under CTO; CIO remains accountable."
+                },
+                {
+                    "item_id": "app-04",
+                    "activity_text": "Establish and follow a formal patch management process for all applications.",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Infrastructure Team": "R",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Workshop decides if IC manager is A and CIO is I, or keep CIO as A."
+                },
+                {
+                    "item_id": "app-05",
+                    "activity_text": "Review and approve changes in weekly Change Control meetings (or designated governance forum).",
+                    "raci": {
+                        "CIO": "A",
+                        "Director": "C",
+                        "Operational Technology Manager": "R",
+                        "Operations Delivery Systems Manager": "R",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Used to force workshop decision on who chairs change control."
+                },
+                {
+                    "item_id": "app-06",
+                    "activity_text": "Document and periodically review Backup and Disaster Recovery (DR) procedures.",
+                    "raci": {
+                        "CIO": "A",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Infrastructure Team": "R",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Common real-world pattern; app will recommend converting one R to C."
+                },
+                {
+                    "item_id": "app-07",
+                    "activity_text": "Incident Response & Recovery",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "R",
+                        "Operational Technology Manager": "R",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Execs usually want Cyber to be R and OT to be R for operational recovery\u2014forces alignment."
+                },
+                {
+                    "item_id": "app-08",
+                    "activity_text": "Maintain licensing portal access and vendor support accounts.",
+                    "raci": {
+                        "CIO": "I",
+                        "OT Infrastructure & Compliance Manager": "A",
+                        "OT Infrastructure Team": "R",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Cyber Security Program Mgr": "I",
+                        "Compliance and Security Consultant": "I",
+                        "Operations Delivery Systems Manager": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "notes": "Makes day-to-day ownership explicit; reduces exec noise."
+                }
+            ]
+        },
+        "infrastructure_raci": {
+            "source_sheet": "INFRASTRUCTURE RACI",
+            "items": [
+                {
+                    "item_id": "infra-01",
+                    "activity_text": "Implement and maintain network segmentation (zones/conduits) for OT environments.",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Infrastructure Team": "R",
+                        "Operational Technology Manager": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "App should recommend one R (team) and make manager A, CIO I (if desired)."
+                },
+                {
+                    "item_id": "infra-02",
+                    "activity_text": "Maintain OT asset inventory (hardware, software, versions, owners, criticality).",
+                    "raci": {
+                        "CIO": "A",
+                        "Operational Technology Manager": "R",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "C",
+                        "Cyber Security Program Mgr": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Common gap area; the wizard should force a single accountable owner."
+                },
+                {
+                    "item_id": "infra-03",
+                    "activity_text": "Define and enforce remote access standards for vendors (MFA, jump hosts, approvals, logging).",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "R",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Compliance Support": "C",
+                        "OT Infrastructure Team": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Execs will want Cyber as R; OT as R for operational approvals\u2014forces agreement."
+                },
+                {
+                    "item_id": "infra-04",
+                    "activity_text": "Centralize OT logging and monitoring with alert thresholds and escalation paths.",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "R",
+                        "OT Infrastructure Team": "R",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Demo includes split ownership; app should recommend R=OT Infra Team, A=Cyber PM or OT I&C Mgr (decision)."
+                },
+                {
+                    "item_id": "infra-05",
+                    "activity_text": "Establish vulnerability scanning approach suitable for OT (safe windows, tooling, approvals).",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "R",
+                        "Operational Technology Manager": "C",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "OT Infrastructure Team": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "notes": "Shows a clean model: Cyber leads, OT consults."
+                }
+            ]
+        },
+        "policy_raci": {
+            "source_sheet": "POLICY RACI",
+            "items": [
+                {
+                    "item_id": "pol-01",
+                    "policy_name": "Change Management Policy",
+                    "policy_scope": "OT application + infrastructure changes; approvals, CAB cadence, emergency changes",
+                    "raci": {
+                        "CIO": "A",
+                        "Director": "C",
+                        "Operational Technology Manager": "R",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Compliance Support": "C",
+                        "Compliance and Security Consultant": "C",
+                        "OT Infrastructure Team": "I",
+                        "Operations Delivery Systems Manager": "C",
+                        "Energy Delivery Systems Supervisor": "C",
+                        "Utility Technology Division": "I",
+                        "CTO": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ],
+                    "notes": "Wizard should propose: R=OT I&C Mgr, A=OT Manager or CIO (decision)."
+                },
+                {
+                    "item_id": "pol-02",
+                    "policy_name": "Patch & Update Policy",
+                    "policy_scope": "Patch windows, testing, compensating controls, exception handling",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Infrastructure Team": "R",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ]
+                },
+                {
+                    "item_id": "pol-03",
+                    "policy_name": "Access Control Policy",
+                    "policy_scope": "Identity lifecycle, privileged access, MFA, break-glass, periodic reviews",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "R",
+                        "OT Compliance Support": "C",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "OT Infrastructure Team": "I",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I"
+                    }
+                },
+                {
+                    "item_id": "pol-04",
+                    "policy_name": "Logging & Monitoring Policy",
+                    "policy_scope": "Log sources, retention, alerting, SOC/OT escalation, investigations",
+                    "raci": {
+                        "CIO": "A",
+                        "Cyber Security Program Mgr": "R",
+                        "OT Infrastructure Team": "C",
+                        "OT Infrastructure & Compliance Manager": "C",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I"
+                    }
+                },
+                {
+                    "item_id": "pol-05",
+                    "policy_name": "Backup & Disaster Recovery (DR) Policy",
+                    "policy_scope": "Backup frequency, immutable storage, restore testing, DR exercises, RTO/RPO targets",
+                    "raci": {
+                        "CIO": "A",
+                        "OT Infrastructure & Compliance Manager": "R",
+                        "OT Infrastructure Team": "R",
+                        "Cyber Security Program Mgr": "C",
+                        "OT Compliance Support": "C",
+                        "Operational Technology Manager": "C",
+                        "Compliance and Security Consultant": "C",
+                        "Director": "I",
+                        "Utility Technology Division": "I",
+                        "CTO": "I",
+                        "Operations Delivery Systems Manager": "I",
+                        "Energy Delivery Systems Supervisor": "I"
+                    },
+                    "gap_flags": [
+                        "MULTIPLE_R"
+                    ]
+                }
+            ]
+        }
+    },
+    "executive_pack_demo_outputs": {
+        "top_gaps_summary": [
+            {
+                "gap_id": "gap-01",
+                "gap_type": "MULTIPLE_R",
+                "title": "Change Control has multiple Responsible owners",
+                "where": [
+                    "applications_raci:app-05",
+                    "policy_raci:pol-01"
+                ],
+                "risk_statement": "Ambiguous ownership can delay changes, weaken auditability, and increase operational risk during incidents.",
+                "recommendation": "Assign ONE chair/owner as R (typically OT I&C Manager or OT Manager) and make Ops + Cyber Consulted; keep CIO as Accountable only for high-risk changes."
+            },
+            {
+                "gap_id": "gap-02",
+                "gap_type": "MULTIPLE_R",
+                "title": "Patch, DR, segmentation split across manager and team without a single accountable operational owner",
+                "where": [
+                    "applications_raci:app-04",
+                    "applications_raci:app-06",
+                    "infrastructure_raci:infra-01",
+                    "policy_raci:pol-02",
+                    "policy_raci:pol-05"
+                ],
+                "risk_statement": "Operational execution is clear, but decision rights and exception approvals are unclear\u2014creates friction and inconsistent enforcement.",
+                "recommendation": "Set OT Infrastructure & Compliance Manager as A for operational policies/processes; OT Infrastructure Team as R for execution; CIO stays I unless escalation threshold is met."
+            },
+            {
+                "gap_id": "gap-03",
+                "gap_type": "MULTIPLE_R",
+                "title": "Incident Response has dual Responsible roles (Cyber + OT) without explicit split of duties",
+                "where": [
+                    "applications_raci:app-07"
+                ],
+                "risk_statement": "During an event, teams may duplicate work or miss critical steps; post-incident accountability becomes disputed.",
+                "recommendation": "Define IR split: Cyber Security Program Mgr = R for detection/containment/forensics; OT Manager = R for operational recovery and safety; CIO = A for executive decisions and communications."
+            }
+        ],
+        "mujib_one_page": {
+            "headline": "OT RACI Alignment: Decision Rights + Accountability Baseline",
+            "what_we_learned": [
+                "CIO accountability is clear for selection/major decisions, but operational A/R needs tightening",
+                "Highest friction areas: change control, patching/DR approvals, and shared incident response ownership"
+            ],
+            "decisions_requested_from_mujib": [
+                "Who is the single operational owner (A) for OT patching and DR exceptions?",
+                "Who chairs Change Control for OT (single R), and what changes require CIO escalation?",
+                "Confirm incident response split: Cyber vs OT responsibilities and when CIO is pulled in"
+            ],
+            "next_steps_30_days": [
+                "Finalize RACI and publish as operating model appendix",
+                "Update Change, Patch, DR, and Logging policies to match agreed ownership",
+                "Run tabletop exercise using the new IR split and escalation thresholds"
+            ]
+        }
+    }
+}

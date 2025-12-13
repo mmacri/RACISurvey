@@ -1,0 +1,9 @@
+item_id,policy_name,role,assignment,notes
+pol-01,Change Management Policy,CIO,A,Needs single R decision
+pol-01,Change Management Policy,Operational Technology Manager,R,Potential chair
+pol-01,Change Management Policy,OT Infrastructure & Compliance Manager,R,Potential chair
+pol-02,Patch & Update Policy,CIO,A,May be adjusted to I after workshop
+pol-02,Patch & Update Policy,OT Infrastructure & Compliance Manager,R,Owns exceptions
+pol-02,Patch & Update Policy,OT Infrastructure Team,R,Executes patching
+pol-03,Access Control Policy,CIO,A,Executive accountability
+pol-03,Access Control Policy,Cyber Security Program Mgr,R,Cyber owns identity policy
