@@ -3,67 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workshops</title>
-  <link rel="stylesheet" href="assets/app.css">
+  <title>Workshops - AWE</title>
+  <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-  <div class="layout">
+  <div class="app-shell">
     <aside class="sidebar">
-      <h1>AWE</h1>
+      <h1><svg width="20" height="20"><use href="assets/icons.svg#logo"></use></svg> AWE</h1>
       <nav class="nav">
         <a data-nav href="index.html">Dashboard</a>
         <a data-nav href="workshop.html">Workshops</a>
         <a data-nav href="wizard.html">Wizard</a>
-        <a data-nav href="review.html">Review</a>
-        <a data-nav href="reports.html">Executive Pack</a>
+        <a data-nav href="reports.html">Reports / Exports</a>
         <a data-nav href="templates.html">Templates</a>
-        <a data-nav href="README.md">Help</a>
       </nav>
     </aside>
-    <div>
-      <header class="header">
-        <div class="badge-row">
-          <div class="badge" id="workshop-badge">Workshops</div>
-          <div class="badge warn" id="mode-badge">Static</div>
+    <main class="main">
+      <div class="panel">
+        <h2>Create Workshop</h2>
+        <div class="grid two">
+          <label>Workshop name<input id="ws-name" placeholder="OT RACI Alignment — Session 01"></label>
+          <label>Customer / Org<input id="ws-org" placeholder="Client name"></label>
+          <label>Sponsor<input id="ws-sponsor" placeholder="Mujib"></label>
+          <label>Date/time<input id="ws-date" type="datetime-local"></label>
+          <label>Mode<select id="ws-mode"><option value="executive">Executive</option><option value="full">Full RACI</option></select></label>
+          <label>Template<select id="ws-template"></select></label>
         </div>
-        <button id="create">New workshop</button>
-      </header>
-      <main class="main page">
-        <section class="card">
-          <div class="panel-title"><h2>Saved workshops</h2><span class="small">Autosaved to localStorage</span></div>
-          <table class="table">
-            <thead><tr><th>Name</th><th>Org</th><th>Sponsor</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="list"></tbody>
-          </table>
-        </section>
-        <section class="card">
-          <div class="panel-title"><h3>Reset demo data</h3></div>
-          <button id="reset">Reset demo data</button>
-        </section>
-      </main>
-    </div>
+        <label>Attendees (comma separated)<textarea id="ws-attendees" placeholder="Name, Title"></textarea></label>
+        <label>Sections to cover<textarea id="ws-scope" placeholder="APPLICATIONS RACI; INFRASTRUCTURE RACI"></textarea></label>
+        <div class="button-row"><button id="create-ws">Create workshop</button></div>
+      </div>
+      <div class="panel">
+        <h2>Saved Workshops</h2>
+        <ul id="ws-list" class="list"></ul>
+      </div>
+    </main>
   </div>
   <script type="module">
-    import store from './assets/store.js';
-    import { markNav } from './assets/router.js';
-    markNav('workshop');
-    const list = document.getElementById('list');
-    function render() {
-      const rows = store.listWorkshops();
-      list.innerHTML = rows.length ? rows.map(w => `<tr><td>${w.name}</td><td>${w.org}</td><td>${w.sponsor}</td><td>${w.status}</td><td class="row"><button data-open="${w.id}">Open</button><button class="secondary" data-delete="${w.id}">Delete</button></td></tr>`).join('') : '<tr><td colspan="5" class="small">No workshops yet.</td></tr>';
-      list.querySelectorAll('button[data-open]')?.forEach(btn => btn.onclick = () => { store.setCurrentWorkshop(btn.dataset.open); window.location.href = 'wizard.html'; });
-      list.querySelectorAll('button[data-delete]')?.forEach(btn => btn.onclick = () => {
-        if (confirm('Delete this workshop? This cannot be undone.')) { store.deleteWorkshop(btn.dataset.delete); render(); }
+    import Store from './assets/store.js';
+    import { demoTemplate } from './assets/templateParser.js';
+    import Router from './assets/router.js';
+    Router.init();
+    const state = Store.load();
+    if (!state.templates.find(t => t.id === 'demo-template')) Store.upsertTemplate(demoTemplate());
+    const templateSelect = document.getElementById('ws-template');
+    Store.load().templates.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = `${t.name} (${t.sections.length} sections)`;
+      templateSelect.appendChild(opt);
+    });
+    document.getElementById('create-ws').onclick = () => {
+      const tmpl = Store.load().templates.find(t => t.id === templateSelect.value);
+      const scope = document.getElementById('ws-scope').value.split(/;|,/).map(s => s.trim()).filter(Boolean);
+      const attendees = document.getElementById('ws-attendees').value.split(/\n|;/).map(row => {
+        const [name, title] = row.split(',').map(x => x?.trim() || '');
+        return name ? { name, title } : null;
+      }).filter(Boolean);
+      const ws = Store.createWorkshop({
+        name: document.getElementById('ws-name').value || 'OT RACI Alignment',
+        org: document.getElementById('ws-org').value,
+        sponsor: document.getElementById('ws-sponsor').value,
+        template_id: tmpl?.id,
+        scope: scope.length ? scope : tmpl?.sections?.map(s => s.name),
+        attendees,
+        mode: document.getElementById('ws-mode').value,
+        role_map: {}
       });
-    }
-    document.getElementById('create').onclick = () => window.location.href = 'index.html#new';
-    document.getElementById('reset').onclick = async () => {
-      const res = await fetch('data/demo_mujib.json');
-      const data = await res.json();
-      store.loadDemo(data);
-      render();
+      alert('Workshop created');
+      window.location.href = 'wizard.html';
     };
-    render();
+    const list = document.getElementById('ws-list');
+    const workshops = Store.listWorkshops();
+    list.innerHTML = workshops.map(w => `<li><div class="label-row"><strong>${w.name}</strong><span class="small">${w.updated_at}</span></div><div class="small">${w.org} • ${w.mode}</div><div class="button-row"><a class="btn secondary" href="wizard.html" onclick="localStorage.setItem('awe.activeWorkshop','${w.id}')">Open</a><button class="btn secondary" onclick="Store.exportWorkshop('${w.id}')">Export JSON</button><button class="btn danger" onclick="if(confirm('Delete this workshop?')){Store.deleteWorkshop('${w.id}'); location.reload();}">Delete</button></div></li>`).join('');
   </script>
 </body>
 </html>
