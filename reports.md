@@ -1,24 +1,7 @@
-# Reports
+# Reports / Exports
 
-## Executive Summary
-- Workshop purpose and scope.
-- Top gaps (critical/high counts per section).
-- Top decisions (first five decision entries).
-
-## Heatmap
-- Counts of critical/high/medium gaps per section derived from gap engine.
-
-## Decision Log
-- Section, activity, decision text, rationale, decided-by.
-
-## Action Plan
-- Title, owner, due date, severity, status, related activity.
-
-## Filled RACI Appendix
-- Table per activity with A/R/C/I selections and confidence.
-
-### Export formats
-- **JSON**: available in static and local modes for raw portability.
-- **XLSX**: generated via backend (`/export/xlsx`) to preserve workbook fidelity.
-- **PPTX (Executive Pack)**: `pptx_service.generate_pack` builds summary, heatmap counts, and action plan.
-- **PDF**: HTML rendered summary piped through WeasyPrint in local mode.
+- **JSON**: always enabled; exported directly from local workshop state.
+- **Filled Excel**: generated client-side via SheetJS using stored template mapping (Section/Activity/Description/RACI columns).
+- **PPTX / PDF**: enabled when `localStorage.apiBase` is set; sent to FastAPI endpoints `/api/export/pptx` and `/api/export/pdf`.
+- **Bulk export**: downloads JSON for all workshops; PPTX/PDF bulk relies on the same backend detection if extended.
+- Executive pack contents: title slide, top gaps, RACI completeness, section-by-section decisions/action items (assembled server-side when backend is implemented fully).

@@ -1,50 +1,28 @@
-# Alignment Workshop Engine (AWE) — Product Definition & Implementation
+# Product Design Intent (PDI)
 
-## Purpose and positioning
-AWE is a self-hosted, static-first facilitation tool that converts executive workshops into structured accountability. It keeps Excel as the canonical control source while capturing metadata, decisions, and deltas locally.
+## Personas
+- **CIO / Sponsor (Mujib):** Wants a crisp, start-to-finish workshop with obvious ownership decisions and an exportable executive pack.
+- **Facilitator:** Needs big tap targets, minimal typing, autosave, and instant gap flags while walking the room through activities.
+- **Template Owner:** Maintains the canonical Excel and expects the wizard to mirror the workbook structure.
 
-- **Not a survey**: every prompt is facilitator-led with immediate validation.
-- **Not a dashboard vanity tool**: screens only exist to guide action and exports.
-- **Reusable consulting asset**: works across NERC CIP, NIST, ISO, SOX, AI governance, OT, and cloud controls without rewriting data models.
+## Journeys
+1. Dashboard → Load Mujib demo → Resume wizard → Review heatmap → Export JSON/Excel (static) or PPTX/PDF (local backend).
+2. Templates → Upload workbook → Mapping UI appears if headers unknown → Template stored → Workshop setup → Wizard generated from the workbook.
+3. Workshops → Metadata + scope + role mapping → Wizard capture → Finalize → Reports/Exports.
 
-## Required experiences
-1. **Live Executive Workshop Mode** — facilitator drives the wizard, participants resolve ownership and ambiguity live.
-2. **Async Pre-Work Mode** — stakeholders submit inputs independently; conflicts are pre-flagged for workshop focus.
-3. **Post-Workshop Output Mode** — one click produces executive summary, RACI matrix (Excel-friendly CSV), gap register, and decision log.
+## Requirements trace
+- **Excel as source of truth:** SheetJS parser reads Section/Activity/Description/Recommended columns; mappings persist per template hash.
+- **Dual modes:** Static mode uses `localStorage`; local mode enables PPTX/PDF endpoints on FastAPI.
+- **Gap logic:** missing/multiple A, missing R, and confidence/status flags rendered in the live panel.
+- **Outputs:** JSON + filled Excel always; PPTX/PDF via backend; bulk JSON export available.
 
-## Canonical data model (logical)
-- Framework
-- Control
-- Role
-- Workshop
-- Response
-- Gap
-- Decision
-- ExportLog
+## Workshop flow alignment
+- **Setup:** `#/workshops` captures metadata, template, scope, and role map.
+- **Wizard:** `#/wizard` shows sections on the left, active activity in the center, gaps/decisions on the right.
+- **Review:** `#/review` heatmap, completeness stats, and finalize action.
+- **Exports:** `#/reports` renders export cards and bulk download.
 
-Excel stays the source of truth for control rows and headers. App storage only tracks responses, conflicts, and export history.
-
-## Validation rules
-- Exactly one **Accountable** per control; missing or multiple A is critical.
-- At least one **Responsible** per control.
-- Low confidence or "Unsure" flags cannot be exported without acknowledgment.
-- Deferred conflicts must carry an owner and a target state.
-
-## Export guarantees
-- **Executive Summary (HTML/JSON/PDF-ready)**: what is aligned, unclear, risky, and pending decisions.
-- **RACI Matrix (Excel compatible)**: preserves control identifiers and row references; appends metadata columns.
-- **Gap Register**: severity, owner, recommendation, status.
-- **Decision Log**: what was decided, by whom, when, and confidence.
-
-## Architecture choices
-- Static HTML/CSS/JS, GitHub Pages compatible.
-- LocalStorage by default with optional IndexedDB stub for heavier use.
-- No external SaaS dependencies; offline-first.
-
-## Success criteria
-- A CIO understands the tool in two minutes.
-- A facilitator can run a workshop with zero prep.
-- Outputs are board-ready immediately.
-- Reusable across frameworks without schema rewrites.
-- Excel remains canonical for controls and role headers.
-- Every screen states purpose and next step; no dead ends.
+## Success metrics
+- Ability to assign Accountable within a single click per activity.
+- Demo workshop loads end-to-end without backend dependencies.
+- Filled Excel generated client-side in under two seconds for the demo set.

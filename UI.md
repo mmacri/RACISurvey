@@ -1,31 +1,8 @@
-# UI and Flow
+# UI notes
 
-## Global layout
-- Fixed sidebar with navigation (Dashboard, Workshops, Wizard, Heatmaps/Reports, Templates).
-- Top status bar on wizard shows workshop title, progress, and critical gap badge.
-
-## Landing page
-- Hero card: explains purpose and outputs in 2–3 sentences.
-- Quick Start steps list.
-- Landing actions: start new, continue, import template, demo workshop.
-- Quick stats grid and recent workshops list.
-
-## Workshop setup (`workshop.html`)
-- Form captures workshop metadata, attendees, scope, template selection, and mode (executive/full).
-- Autosets active workshop and redirects to wizard.
-
-## Wizard (`wizard.html`)
-- Left column: activity list with section labels and counters.
-- Right column: active activity panel capturing Accountable, Responsible, Consulted, Informed, confidence, status, and notes.
-- Gap alerts show instantly after save.
-
-## Reports (`reports.html`)
-- Export controls for JSON, Excel, PPTX, PDF.
-- Rendered cards: executive summary, decision log, action plan.
-
-## Templates (`templates.html`)
-- Upload Excel workbook (SheetJS) and show derived counts.
-
-## Interactions
-- Buttons are keyboard reachable; selectors use native inputs.
-- Autosave on every activity save; localStorage persistence.
+- Layout: hash-routed single shell (`index.html`) with left navigation, content container, and mode indicator (Static vs Local).
+- Pages are fragments in `pages/` loaded into the shell; `assets/router.js` swaps content on `hashchange`.
+- Components: cards/panels/pills defined in `assets/styles.css`, tables rendered via `renderTable` in `uiComponents.js`.
+- Wizard: three-column layout (sections list, active activity, live decisions/gaps). Buttons are large with minimal text input.
+- Responsiveness: grids collapse via `repeat(auto-fit, minmax())` for cards, tables scroll horizontally when needed.
+- Visual language: dark theme with accent green; badges show readiness and mode; alerts highlight gaps.

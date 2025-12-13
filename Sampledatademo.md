@@ -1,19 +1,10 @@
-# Mujib Demo Dataset
+# Mujib demo dataset
 
-A prebuilt workshop named **"OT RACI Alignment — Mujib Demo"** showcases how the engine highlights ownership clarity and leadership actions.
+- `examples/mujib_demo_workshop.json`: 6 sections, 18 activities, 7 gaps, 5 action items, pre-filled RACI assignments; sponsor Mujib.
+- `examples/mujib_demo_template_mapping.json`: canonical template schema with role catalog and mapping `{section, activity, description, recommended}`.
+- `examples/mujib_demo_template.xlsx`: workbook that matches the mapping; headers are `Section / Activity / Description / Recommended RACI`.
 
-## Contents
-- `examples/mujib_demo_workshop.json`: complete workshop object with metadata, 25 activity responses, 8 decisions, and 10 actions.
-- `examples/mujib_demo_rolemap.json`: mapping of template role columns to people/teams.
-- `examples/mujib_demo_actions.csv`: CSV export of the action plan.
-
-## Highlights
-- 12 attendees representing CIO, CTO, PSA Sr Manager, OT Infra & Compliance Manager, EMS Ops Owner, GIS Owner, Security Architect, Change Manager, SCADA Supervisor, NERC CIP Lead, OT Support Lead, and Service Desk Manager.
-- Coverage for two sections (Applications and Infrastructure) with 25 activities populated.
-- Gap illustration: 6+ critical gaps (missing/multiple Accountables), low confidence entries, and follow-up flags.
-- 10 follow-up actions with owners and due dates.
-- 8 decisions with rationales demonstrating leadership alignment.
-
-## How to load
-- Static UI: click **Demo Workshop** on `docs/index.html` to seed the dataset into localStorage.
-- Backend: POST the JSON to your API or import the template, then ingest the responses via `/api/workshops/{id}/responses`.
+How to use:
+1. From Dashboard click **Load Mujib Demo** to import the workshop, template, and mapping.
+2. Open **Wizard** to see activities pre-populated; gaps surface on Review.
+3. Export JSON/Excel from **Reports**; PPTX/PDF enabled when `localStorage.apiBase` is set to a running FastAPI backend.

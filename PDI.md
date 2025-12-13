@@ -1,29 +1,28 @@
 # Product Design Intent (PDI)
 
 ## Personas
-- **CIO (Mujib):** Wants clarity on ownership, fast decision-making, and executive-ready outputs.
-- **Facilitator:** Runs the workshop live, needs keyboard-friendly capture and instant gap flags.
-- **Template Owner:** Maintains canonical Excel template; expects fidelity between workbook and UI.
+- **CIO / Sponsor (Mujib):** Wants a crisp, start-to-finish workshop with obvious ownership decisions and an exportable executive pack.
+- **Facilitator:** Needs big tap targets, minimal typing, autosave, and instant gap flags while walking the room through activities.
+- **Template Owner:** Maintains the canonical Excel and expects the wizard to mirror the workbook structure.
 
 ## Journeys
-1. Land on dashboard → import Excel template → start workshop → map roles → run wizard per activity → review heatmap → export executive pack.
-2. Swap template (different framework) → engine derives sections/roles → reuse wizard flow without code changes.
+1. Dashboard → Load Mujib demo → Resume wizard → Review heatmap → Export JSON/Excel (static) or PPTX/PDF (local backend).
+2. Templates → Upload workbook → Mapping UI appears if headers unknown → Template stored → Workshop setup → Wizard generated from the workbook.
+3. Workshops → Metadata + scope + role mapping → Wizard capture → Finalize → Reports/Exports.
 
 ## Requirements trace
-- Excel is canonical: parser reads header roles and activity rows from RACI sheets.
-- Modes: static (localStorage) and local backend (FastAPI) with file exports.
-- Gap logic: missing/multiple A, missing R, too many R, A==R flag, low confidence, follow-up.
-- Outputs: JSON always; Excel/PPTX/PDF via backend.
+- **Excel as source of truth:** SheetJS parser reads Section/Activity/Description/Recommended columns; mappings persist per template hash.
+- **Dual modes:** Static mode uses `localStorage`; local mode enables PPTX/PDF endpoints on FastAPI.
+- **Gap logic:** missing/multiple A, missing R, and confidence/status flags rendered in the live panel.
+- **Outputs:** JSON + filled Excel always; PPTX/PDF via backend; bulk JSON export available.
 
 ## Workshop flow alignment
-- **Phase 0 Setup:** dashboard + `workshop.html` capture metadata and scope.
-- **Phase 1 Orient:** template instructions rendered from workbook text (INSTRUCTIONS/RACI Definitions supported via parser placeholder).
-- **Phase 2 Org map:** role_map stored on workshop payload; templates page shows roles.
-- **Phase 3 Wizard:** `wizard.html` lists activities, captures A/R/C/I with quick chips and shows gaps.
-- **Phase 4 Review:** `reports.html` renders summary, decision log, action plan, and heatmap counts.
-- **Phase 5 Export:** buttons call JSON export in static mode; backend exposes Excel/PPTX/PDF endpoints.
+- **Setup:** `#/workshops` captures metadata, template, scope, and role map.
+- **Wizard:** `#/wizard` shows sections on the left, active activity in the center, gaps/decisions on the right.
+- **Review:** `#/review` heatmap, completeness stats, and finalize action.
+- **Exports:** `#/reports` renders export cards and bulk download.
 
 ## Success metrics
-- Time to identify Accountable per activity (<1 minute) using rapid list.
-- Gap coverage: critical gaps flagged in real time for 100% of missing/multiple Accountables.
-- Export freshness: executive pack available immediately after finalization.
+- Ability to assign Accountable within a single click per activity.
+- Demo workshop loads end-to-end without backend dependencies.
+- Filled Excel generated client-side in under two seconds for the demo set.
