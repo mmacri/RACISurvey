@@ -80,6 +80,15 @@ const Store = (() => {
     save(state);
   }
 
+  function deleteWorkshop(id) {
+    const state = load();
+    state.workshops = state.workshops.filter(w => w.id !== id);
+    if (state.activeWorkshopId === id) {
+      state.activeWorkshopId = state.workshops[state.workshops.length - 1]?.id || null;
+    }
+    save(state);
+  }
+
   function addActivityResponse(workshopId, response) {
     const ws = getWorkshop(workshopId);
     if (!ws) return null;
@@ -92,6 +101,14 @@ const Store = (() => {
     ws.updated_at = new Date().toISOString();
     updateWorkshop(workshopId, ws);
     return response;
+  }
+
+  function removeActivityResponse(workshopId, activityId) {
+    const ws = getWorkshop(workshopId);
+    if (!ws) return null;
+    ws.activityResponses = (ws.activityResponses || []).filter(r => r.activity_id !== activityId);
+    updateWorkshop(workshopId, ws);
+    return ws;
   }
 
   function addDecision(workshopId, decision) {
@@ -122,7 +139,7 @@ const Store = (() => {
     URL.revokeObjectURL(url);
   }
 
-  return { load, save, upsertTemplate, createWorkshop, updateWorkshop, getWorkshop, listWorkshops, setActive, addActivityResponse, addDecision, addAction, exportWorkshop };
+  return { load, save, upsertTemplate, createWorkshop, updateWorkshop, getWorkshop, listWorkshops, setActive, deleteWorkshop, addActivityResponse, removeActivityResponse, addDecision, addAction, exportWorkshop };
 })();
 
 export default Store;

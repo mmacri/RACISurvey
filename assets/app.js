@@ -128,7 +128,10 @@ function showActivity(ws, activity, roles) {
       <label>Confidence <select id="confidence"><option value="low" ${response.confidence==='low'?'selected':''}>Low</option><option value="med" ${response.confidence==='med'?'selected':''}>Med</option><option value="high" ${response.confidence==='high'?'selected':''}>High</option></select></label>
       <label>Status <select id="status"><option value="proposed" ${response.status==='proposed'?'selected':''}>Proposed</option><option value="confirmed" ${response.status==='confirmed'?'selected':''}>Confirmed</option><option value="followup" ${response.status==='followup'?'selected':''}>Needs follow-up</option></select></label>
       <label>Notes <textarea id="notes">${response.notes||''}</textarea></label>
-      <div class="button-row"><button id="save-act">Save</button></div>
+      <div class="button-row">
+        <button id="save-act">Save</button>
+        ${ws.activityResponses?.some(r => r.activity_id === activity.id) ? '<button class="btn secondary" id="delete-act">Delete response</button>' : ''}
+      </div>
       <div id="gap-view"></div>
     </div>`;
   document.getElementById('save-act').onclick = () => {
@@ -146,6 +149,16 @@ function showActivity(ws, activity, roles) {
     Store.addActivityResponse(ws.id, updated);
     renderGaps(updated.gaps);
   };
+  const deleteBtn = document.getElementById('delete-act');
+  if (deleteBtn) {
+    deleteBtn.onclick = () => {
+      if (confirm('Delete this activity response?')) {
+        Store.removeActivityResponse(ws.id, activity.id);
+        panel.innerHTML = '<p class="small">Response removed. Select another activity to continue.</p>';
+        renderWizard();
+      }
+    };
+  }
   renderGaps(response.gaps || []);
 }
 

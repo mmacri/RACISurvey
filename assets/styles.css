@@ -111,6 +111,13 @@ button, .btn {
   box-shadow: none;
 }
 
+.btn.danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecdd3;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: none;
+}
+
 .card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
