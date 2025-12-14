@@ -120,3 +120,33 @@
 [2025-12-14T18:49:40.660Z]   Relative path: \.git\index
 [2025-12-14T18:49:40.660Z]   Path parts (2): [".git","index"]
 [2025-12-14T18:49:40.660Z]   EXCLUDED: not deep enough (2 < 3)
+[2025-12-14T18:49:40.827Z] File change detected: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git\index
+[2025-12-14T18:49:40.827Z]   Relative path: \.git\index
+[2025-12-14T18:49:40.827Z]   Path parts (2): [".git","index"]
+[2025-12-14T18:49:40.827Z]   EXCLUDED: not deep enough (2 < 3)
+[2025-12-14T18:49:40.982Z] File change detected: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git\index
+[2025-12-14T18:49:40.982Z]   Relative path: \.git\index
+[2025-12-14T18:49:40.983Z]   Path parts (2): [".git","index"]
+[2025-12-14T18:49:40.983Z]   EXCLUDED: not deep enough (2 < 3)
+[2025-12-14T18:49:40.983Z] File change detected: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git\logs\HEAD
+[2025-12-14T18:49:40.983Z]   Relative path: \.git\logs\HEAD
+[2025-12-14T18:49:40.984Z]   Path parts (3): [".git","logs","HEAD"]
+[2025-12-14T18:49:40.984Z]   Instance folder: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git
+[2025-12-14T18:49:40.984Z]   Settings check: _settings.json=false, settings.json=false
+[2025-12-14T18:49:40.984Z]   EXCLUDED: no settings file in instance folder
+[2025-12-14T18:49:40.985Z] File change detected: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git\logs\refs\heads\main
+[2025-12-14T18:49:40.985Z]   Relative path: \.git\logs\refs\heads\main
+[2025-12-14T18:49:40.985Z]   Path parts (5): [".git","logs","refs","heads","main"]
+[2025-12-14T18:49:40.985Z]   Instance folder: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git
+[2025-12-14T18:49:40.986Z]   Settings check: _settings.json=false, settings.json=false
+[2025-12-14T18:49:40.986Z]   EXCLUDED: no settings file in instance folder
+[2025-12-14T18:49:40.986Z] File change detected: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git\refs\heads\main
+[2025-12-14T18:49:40.986Z]   Relative path: \.git\refs\heads\main
+[2025-12-14T18:49:40.987Z]   Path parts (4): [".git","refs","heads","main"]
+[2025-12-14T18:49:40.987Z]   Instance folder: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git
+[2025-12-14T18:49:40.987Z]   Settings check: _settings.json=false, settings.json=false
+[2025-12-14T18:49:40.987Z]   EXCLUDED: no settings file in instance folder
+[2025-12-14T18:49:42.951Z] File change detected: c:\Users\mikem\OneDrive\Mike\GitHub\RACISurvey\.git\index
+[2025-12-14T18:49:42.951Z]   Relative path: \.git\index
+[2025-12-14T18:49:42.951Z]   Path parts (2): [".git","index"]
+[2025-12-14T18:49:42.952Z]   EXCLUDED: not deep enough (2 < 3)
